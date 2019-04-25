@@ -1,5 +1,9 @@
 # it-pushable
 
+[![Build Status](https://travis-ci.org/alanshaw/it-pushable.svg?branch=master)](https://travis-ci.org/alanshaw/it-pushable)
+[![dependencies Status](https://david-dm.org/alanshaw/it-pushable/status.svg)](https://david-dm.org/alanshaw/it-pushable)
+[![JavaScript Style Guide](https://img.shields.io/badge/code_style-standard-brightgreen.svg)](https://standardjs.com)
+
 > An iterable that you can push values into
 
 ## Install
@@ -12,15 +16,15 @@ npm install it-pushable
 
 ```js
 const pushable = require('it-pushable')
-const pusher = pushable()
+const source = pushable()
 
-setTimeout(() => pusher.push('hello'), 100)
-setTimeout(() => pusher.push('world'), 200)
-setTimeout(() => pusher.end(), 300)
+setTimeout(() => source.push('hello'), 100)
+setTimeout(() => source.push('world'), 200)
+setTimeout(() => source.end(), 300)
 
 const start = Date.now()
 
-for await (const value of pusher) {
+for await (const value of source) {
   console.log(`got "${value}" after ${Date.now() - start}ms`)
 }
 console.log(`done after ${Date.now() - start}ms`)
@@ -32,3 +36,22 @@ got "world" after 207ms
 done after 309ms
 */
 ```
+
+## API
+
+### `pushable([onEnd])`
+
+Create a new async iterable. The values yielded from calls to `.next()` or when used in a `for await of` loop are "pushed" into the iterable. Returns an async iterable object with the following additional methods:
+
+* `.push(value)` - push a value into the iterable. Values are yielded from the iterable in the order they are pushed. Values not yet consumed from the iterable are buffered
+* `.end([err])` - end the iterable after all values in the buffer (if any) have been yielded. If an error is passed the buffer is cleared immediately and the next iteration will throw the passed error
+
+The _optional_ parameter `onEnd` is a function called after all values have been yielded from the iterator (including buffered values). In the case when the iterator is ended with an error it will be passed the error as a parameter.
+
+## Contribute
+
+Feel free to dive in! [Open an issue](https://github.com/alanshaw/it-pushable/issues/new) or submit PRs.
+
+## License
+
+[MIT](LICENSE) © Alan Shaw

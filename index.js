@@ -1,6 +1,6 @@
-module.exports = () => {
+module.exports = onEnd => {
   let buffer = []
-  let onNext, ended
+  let pushable, onNext, ended
 
   const waitNext = () => {
     if (buffer.length) return buffer.shift()
@@ -10,7 +10,7 @@ module.exports = () => {
       onNext = next => {
         onNext = null
         resolve(next)
-        return pusher
+        return pushable
       }
     })
   }
@@ -18,25 +18,43 @@ module.exports = () => {
   const bufferNext = next => {
     if (onNext) return onNext(Promise.resolve(next))
     buffer.push(Promise.resolve(next))
-    return pusher
+    return pushable
   }
 
   const bufferError = err => {
     buffer = []
     if (onNext) return onNext(Promise.reject(err))
     buffer.push(Promise.reject(err))
-    return pusher
+    return pushable
   }
 
-  const pusher = {
-    [Symbol.asyncIterator]: () => pusher,
+  const push = value => bufferNext({ done: false, value })
+  const end = err => {
+    ended = true
+    return err ? bufferError(err) : bufferNext({ done: true })
+  }
+
+  pushable = {
+    [Symbol.asyncIterator] () { return this },
     next: waitNext,
-    push: value => bufferNext({ done: false, value }),
-    end: err => {
-      ended = true
-      return err ? bufferError(err) : bufferNext({ done: true })
-    }
+    push,
+    end
   }
 
-  return pusher
+  if (!onEnd) return pushable
+
+  const _pushable = pushable
+  pushable = (async function * () {
+    try {
+      for await (const value of _pushable) {
+        yield value
+      }
+    } catch (err) {
+      onEnd(err)
+      throw err
+    }
+    onEnd()
+  })()
+
+  return Object.assign(pushable, { push, end })
 }

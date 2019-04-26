@@ -1,6 +1,6 @@
 {
   "name": "it-pushable",
-  "version": "1.1.0",
+  "version": "1.1.1",
   "description": "Pushable iterable",
   "main": "index.js",
   "scripts": {

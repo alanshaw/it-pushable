@@ -1,11 +1,14 @@
+const FIFO = require('fast-fifo')
+
 module.exports = onEnd => {
-  let buffer = []
+  let buffer = new FIFO()
   let pushable, onNext, ended
 
   const waitNext = () => {
-    if (buffer.length) {
+    if (!buffer.isEmpty()) {
       const next = buffer.shift()
-      return next.error ? Promise.reject(next.error) : Promise.resolve(next)
+      if (next.error) throw next.error
+      return next
     }
 
     if (ended) return { done: true }
@@ -26,7 +29,7 @@ module.exports = onEnd => {
   }
 
   const bufferError = err => {
-    buffer = []
+    buffer = new FIFO()
     if (onNext) return onNext(Promise.reject(err))
     buffer.push({ error: err })
     return pushable
@@ -42,7 +45,7 @@ module.exports = onEnd => {
     return err ? bufferError(err) : bufferNext({ done: true })
   }
   const _return = () => {
-    buffer = []
+    buffer = new FIFO()
     end()
     return { done: true }
   }

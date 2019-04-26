@@ -120,3 +120,94 @@ test.cb('should call onEnd with error', t => {
   setTimeout(() => source.end(new Error('boom')), 10)
   pipe(source, collect).catch(() => {})
 })
+
+test.cb('should call onEnd on return before end', t => {
+  const input = [1, 2, 3, 4, 5]
+  const max = 2
+  const output = []
+
+  const source = pushable(() => {
+    t.deepEqual(output, input.slice(0, max))
+    t.end()
+  })
+
+  input.forEach((v, i) => setTimeout(() => source.push(v), i * 10))
+  setTimeout(() => source.end(), input.length * 10)
+
+  ;(async () => {
+    let i = 0
+    for await (const value of source) {
+      output.push(value)
+      i++
+      if (i === max) break
+    }
+  })()
+})
+
+test.cb('should call onEnd by calling return', t => {
+  const input = [1, 2, 3, 4, 5]
+  const max = 2
+  const output = []
+
+  const source = pushable(() => {
+    t.deepEqual(output, input.slice(0, max))
+    t.end()
+  })
+
+  input.forEach((v, i) => setTimeout(() => source.push(v), i * 10))
+  setTimeout(() => source.end(), input.length * 10)
+
+  ;(async () => {
+    let i = 0
+    while (i !== max) {
+      i++
+      const { value } = await source.next()
+      output.push(value)
+    }
+    source.return()
+  })()
+})
+
+test.cb('should call onEnd once', t => {
+  const input = [1, 2, 3, 4, 5]
+
+  let count = 0
+  const source = pushable(() => {
+    count++
+    t.is(count, 1)
+    setTimeout(() => t.end(), 50)
+  })
+
+  input.forEach((v, i) => setTimeout(() => source.push(v), i * 10))
+
+  ;(async () => {
+    await source.next()
+    source.return()
+    source.next()
+  })()
+})
+
+test.cb('should call onEnd by calling throw', t => {
+  const input = [1, 2, 3, 4, 5]
+  const max = 2
+  const output = []
+
+  const source = pushable(err => {
+    t.is(err.message, 'boom')
+    t.deepEqual(output, input.slice(0, max))
+    t.end()
+  })
+
+  input.forEach((v, i) => setTimeout(() => source.push(v), i * 10))
+  setTimeout(() => source.end(), input.length * 10)
+
+  ;(async () => {
+    let i = 0
+    while (i !== max) {
+      i++
+      const { value } = await source.next()
+      output.push(value)
+    }
+    source.throw(new Error('boom'))
+  })()
+})

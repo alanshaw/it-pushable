@@ -3,7 +3,11 @@ module.exports = onEnd => {
   let pushable, onNext, ended
 
   const waitNext = () => {
-    if (buffer.length) return buffer.shift()
+    if (buffer.length) {
+      const next = buffer.shift()
+      return next.error ? Promise.reject(next.error) : Promise.resolve(next)
+    }
+
     if (ended) return { done: true }
 
     return new Promise(resolve => {
@@ -17,26 +21,41 @@ module.exports = onEnd => {
 
   const bufferNext = next => {
     if (onNext) return onNext(Promise.resolve(next))
-    buffer.push(Promise.resolve(next))
+    buffer.push(next)
     return pushable
   }
 
   const bufferError = err => {
     buffer = []
     if (onNext) return onNext(Promise.reject(err))
-    buffer.push(Promise.reject(err))
+    buffer.push({ error: err })
     return pushable
   }
 
-  const push = value => bufferNext({ done: false, value })
+  const push = value => {
+    if (ended) return pushable
+    return bufferNext({ done: false, value })
+  }
   const end = err => {
+    if (ended) return pushable
     ended = true
     return err ? bufferError(err) : bufferNext({ done: true })
+  }
+  const _return = () => {
+    buffer = []
+    end()
+    return { done: true }
+  }
+  const _throw = err => {
+    end(err)
+    return { done: true }
   }
 
   pushable = {
     [Symbol.asyncIterator] () { return this },
     next: waitNext,
+    return: _return,
+    throw: _throw,
     push,
     end
   }
@@ -44,17 +63,47 @@ module.exports = onEnd => {
   if (!onEnd) return pushable
 
   const _pushable = pushable
-  pushable = (async function * () {
-    try {
-      for await (const value of _pushable) {
-        yield value
-      }
-    } catch (err) {
-      onEnd(err)
-      throw err
-    }
-    onEnd()
-  })()
 
-  return Object.assign(pushable, { push, end })
+  pushable = {
+    [Symbol.asyncIterator] () { return this },
+    async next () {
+      let res
+      try {
+        res = await _pushable.next()
+
+        if (res.done && onEnd) {
+          onEnd()
+          onEnd = null
+        }
+
+        return res
+      } catch (err) {
+        if (onEnd) {
+          onEnd(err)
+          onEnd = null
+        }
+        throw err
+      }
+    },
+    throw (err) {
+      _pushable.throw(err)
+      if (onEnd) {
+        onEnd(err)
+        onEnd = null
+      }
+      return { done: true }
+    },
+    return () {
+      _pushable.return()
+      if (onEnd) {
+        onEnd()
+        onEnd = null
+      }
+      return { done: true }
+    },
+    push,
+    end
+  }
+
+  return pushable
 }

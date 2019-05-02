@@ -69,24 +69,8 @@ module.exports = onEnd => {
 
   pushable = {
     [Symbol.asyncIterator] () { return this },
-    async next () {
-      let res
-      try {
-        res = await _pushable.next()
-
-        if (res.done && onEnd) {
-          onEnd()
-          onEnd = null
-        }
-
-        return res
-      } catch (err) {
-        if (onEnd) {
-          onEnd(err)
-          onEnd = null
-        }
-        throw err
-      }
+    next () {
+      return _pushable.next()
     },
     throw (err) {
       _pushable.throw(err)
@@ -105,7 +89,14 @@ module.exports = onEnd => {
       return { done: true }
     },
     push,
-    end
+    end (err) {
+      _pushable.end(err)
+      if (onEnd) {
+        onEnd(err)
+        onEnd = null
+      }
+      return pushable
+    }
   }
 
   return pushable

@@ -112,6 +112,11 @@ test.cb('should call onEnd', t => {
   pipe(source, collect)
 })
 
+test.cb('should call onEnd even if not piped', t => {
+  const source = pushable(() => t.end())
+  source.end()
+})
+
 test.cb('should call onEnd with error', t => {
   const source = pushable(err => {
     t.is(err.message, 'boom')

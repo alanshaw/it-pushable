@@ -39,14 +39,19 @@ done after 309ms
 
 ## API
 
-### `pushable([onEnd])`
+### `pushable([options])`
 
 Create a new async iterable. The values yielded from calls to `.next()` or when used in a `for await of` loop are "pushed" into the iterable. Returns an async iterable object with the following additional methods:
 
 * `.push(value)` - push a value into the iterable. Values are yielded from the iterable in the order they are pushed. Values not yet consumed from the iterable are buffered
 * `.end([err])` - end the iterable after all values in the buffer (if any) have been yielded. If an error is passed the buffer is cleared immediately and the next iteration will throw the passed error
 
-The _optional_ parameter `onEnd` is a function called after all values have been yielded from the iterator (including buffered values). In the case when the iterator is ended with an error it will be passed the error as a parameter.
+`options` is an _optional_ parameter, an object with the following properties:
+
+* `onEnd` - a function called after _all_ values have been yielded from the iterator (including buffered values). In the case when the iterator is ended with an error it will be passed the error as a parameter.
+* `writev` - a boolean used to signal that the consumer of this iterable supports processing multiple buffered chunks at a time. When this option is set to `true` values yielded from the iterable will be arrays.
+
+Note: the `onEnd` function may be passed instead of `options`.
 
 ## Contribute
 

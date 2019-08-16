@@ -1,11 +1,30 @@
 const FIFO = require('fast-fifo')
 
-module.exports = onEnd => {
+module.exports = (options) => {
+  options = options || {}
+  let onEnd
+
+  if (typeof options === 'function') {
+    onEnd = options
+    options = {}
+  }
+
   let buffer = new FIFO()
   let pushable, onNext, ended
 
   const waitNext = () => {
     if (!buffer.isEmpty()) {
+      if (options.writev) {
+        let next
+        const values = []
+        while (!buffer.isEmpty()) {
+          next = buffer.shift()
+          if (next.error) throw next.error
+          values.push(next.value)
+        }
+        return { done: next.done, value: values }
+      }
+
       const next = buffer.shift()
       if (next.error) throw next.error
       return next

@@ -112,6 +112,16 @@ test.cb('should call onEnd', t => {
   pipe(source, collect)
 })
 
+test.cb('should call onEnd if passed in options object', t => {
+  const source = pushable({ onEnd: () => t.end() })
+  const input = [1, 2, 3]
+  for (let i = 0; i < input.length; i++) {
+    setTimeout(() => source.push(input[i]), i * 10)
+  }
+  setTimeout(() => source.end(), input.length * 10)
+  pipe(source, collect)
+})
+
 test.cb('should call onEnd even if not piped', t => {
   const source = pushable(() => t.end())
   source.end()

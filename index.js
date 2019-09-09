@@ -7,6 +7,8 @@ module.exports = (options) => {
   if (typeof options === 'function') {
     onEnd = options
     options = {}
+  } else {
+    onEnd = options.onEnd
   }
 
   let buffer = new FIFO()

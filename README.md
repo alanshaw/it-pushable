@@ -53,6 +53,10 @@ Create a new async iterable. The values yielded from calls to `.next()` or when 
 
 Note: the `onEnd` function may be passed instead of `options`.
 
+## Related
+
+* [`it-pipe`](https://www.npmjs.com/package/it-pipe) Utility to "pipe" async iterables together
+
 ## Contribute
 
 Feel free to dive in! [Open an issue](https://github.com/alanshaw/it-pushable/issues/new) or submit PRs.

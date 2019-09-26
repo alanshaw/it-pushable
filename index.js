@@ -34,24 +34,32 @@ module.exports = (options) => {
 
     if (ended) return { done: true }
 
-    return new Promise(resolve => {
+    return new Promise((resolve, reject) => {
       onNext = next => {
         onNext = null
-        resolve(next)
+        if (next.error) {
+          reject(next.error)
+        } else {
+          if (options.writev && !next.done) {
+            resolve({ done: next.done, value: [next.value] })
+          } else {
+            resolve(next)
+          }
+        }
         return pushable
       }
     })
   }
 
   const bufferNext = next => {
-    if (onNext) return onNext(Promise.resolve(next))
+    if (onNext) return onNext(next)
     buffer.push(next)
     return pushable
   }
 
   const bufferError = err => {
     buffer = new FIFO()
-    if (onNext) return onNext(Promise.reject(err))
+    if (onNext) return onNext({ error: err })
     buffer.push({ error: err })
     return pushable
   }

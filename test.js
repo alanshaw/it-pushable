@@ -236,6 +236,17 @@ test('should support writev', async t => {
   t.deepEqual(output[0], input)
 })
 
+test('should always yield arrays when using writev', async t => {
+  const source = pushable({ writev: true })
+  const input = [1, 2, 3]
+  setTimeout(() => {
+    input.forEach(v => source.push(v))
+    setTimeout(() => source.end())
+  })
+  const output = await pipe(source, collect)
+  output.forEach(v => t.true(Array.isArray(v)))
+})
+
 test('should support writev and end with error', async t => {
   const source = pushable({ writev: true })
   const input = [1, 2, 3]

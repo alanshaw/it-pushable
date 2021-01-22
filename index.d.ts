@@ -21,4 +21,4 @@ type OptionsV = {
 declare function pushable<T> (options?: Options): Pushable<T>
 declare function pushable<T> (options: OptionsV): PushableV<T>
 
-export default pushable
+export = pushable

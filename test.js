@@ -1,6 +1,6 @@
-import test from 'ava'
-import pipe from 'it-pipe'
-import pushable from '.'
+const test = require('ava')
+const pipe = require('it-pipe')
+const pushable = require('.')
 
 const collect = async source => {
   const input = []

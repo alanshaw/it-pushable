@@ -226,32 +226,3 @@ test.cb('should call onEnd by calling throw', t => {
     source.throw(new Error('boom'))
   })()
 })
-
-test('should support writev', async t => {
-  const source = pushable({ writev: true })
-  const input = [1, 2, 3]
-  input.forEach(v => source.push(v))
-  setTimeout(() => source.end())
-  const output = await pipe(source, collect)
-  t.deepEqual(output[0], input)
-})
-
-test('should always yield arrays when using writev', async t => {
-  const source = pushable({ writev: true })
-  const input = [1, 2, 3]
-  setTimeout(() => {
-    input.forEach(v => source.push(v))
-    setTimeout(() => source.end())
-  })
-  const output = await pipe(source, collect)
-  output.forEach(v => t.true(Array.isArray(v)))
-})
-
-test('should support writev and end with error', async t => {
-  const source = pushable({ writev: true })
-  const input = [1, 2, 3]
-  input.forEach(v => source.push(v))
-  source.end(new Error('boom'))
-  const err = await t.throwsAsync(pipe(source, collect))
-  t.deepEqual(err.message, 'boom')
-})

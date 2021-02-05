@@ -49,7 +49,6 @@ Create a new async iterable. The values yielded from calls to `.next()` or when 
 `options` is an _optional_ parameter, an object with the following properties:
 
 * `onEnd` - a function called after _all_ values have been yielded from the iterator (including buffered values). In the case when the iterator is ended with an error it will be passed the error as a parameter.
-* `writev` - a boolean used to signal that the consumer of this iterable supports processing multiple buffered chunks at a time. When this option is set to `true` values yielded from the iterable will be arrays.
 
 Note: the `onEnd` function may be passed instead of `options`.
 

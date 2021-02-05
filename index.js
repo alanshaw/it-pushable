@@ -16,17 +16,6 @@ module.exports = (options) => {
 
   const waitNext = () => {
     if (!buffer.isEmpty()) {
-      if (options.writev) {
-        let next
-        const values = []
-        while (!buffer.isEmpty()) {
-          next = buffer.shift()
-          if (next.error) throw next.error
-          values.push(next.value)
-        }
-        return { done: next.done, value: values }
-      }
-
       const next = buffer.shift()
       if (next.error) throw next.error
       return next
@@ -40,11 +29,7 @@ module.exports = (options) => {
         if (next.error) {
           reject(next.error)
         } else {
-          if (options.writev && !next.done) {
-            resolve({ done: next.done, value: [next.value] })
-          } else {
-            resolve(next)
-          }
+          resolve(next)
         }
         return pushable
       }

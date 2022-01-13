@@ -130,9 +130,6 @@
     "it-all": "^1.0.6",
     "it-pipe": "^2.0.0"
   },
-  "dependencies": {
-    "fast-fifo": "^1.0.0"
-  },
   "repository": {
     "type": "git",
     "url": "git+https://github.com/alanshaw/it-pushable.git"

@@ -1,4 +1,4 @@
-import FIFO from 'fast-fifo'
+import { FIFO } from './fifo.js'
 
 interface BasePushable<T> {
   end: (err?: Error) => this

@@ -1,8 +1,8 @@
 // ported from https://www.npmjs.com/package/fast-fifo
 
 class FixedFIFO<T> {
-  public buffer: (T | undefined)[]
-  private mask: number
+  public buffer: Array<T | undefined>
+  private readonly mask: number
   private top: number
   private btm: number
   public next: FixedFIFO<T> | null
@@ -48,7 +48,7 @@ class FixedFIFO<T> {
 }
 
 export class FIFO<T> {
-  private hwm: number
+  private readonly hwm: number
   private head: FixedFIFO<T>
   private tail: FixedFIFO<T>
 
@@ -69,7 +69,7 @@ export class FIFO<T> {
   shift () {
     const val = this.tail.shift()
 
-    if (val === undefined && this.tail.next) {
+    if (val === undefined && (this.tail.next != null)) {
       const next = this.tail.next
       this.tail.next = null
       this.tail = next

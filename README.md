@@ -1,7 +1,7 @@
 # it-pushable
 
-[![Build Status](https://travis-ci.org/alanshaw/it-pushable.svg?branch=master)](https://travis-ci.org/alanshaw/it-pushable)
-[![dependencies Status](https://david-dm.org/alanshaw/it-pushable/status.svg)](https://david-dm.org/alanshaw/it-pushable)
+[![Build Status](https://github.com/alanshaw/it-pushable/actions/workflows/js-test-and-release.yml/badge.svg?branch=master)](https://github.com/alanshaw/it-pushable/actions/workflows/js-test-and-release.yml)
+[![Dependencies Status](https://david-dm.org/alanshaw/it-pushable/status.svg)](https://david-dm.org/alanshaw/it-pushable)
 [![JavaScript Style Guide](https://img.shields.io/badge/code_style-standard-brightgreen.svg)](https://standardjs.com)
 
 > An iterable that you can push values into
@@ -15,7 +15,8 @@ npm install it-pushable
 ## Usage
 
 ```js
-const pushable = require('it-pushable')
+import { pushable } from 'it-pushable'
+
 const source = pushable()
 
 setTimeout(() => source.push('hello'), 100)
@@ -37,6 +38,24 @@ done after 309ms
 */
 ```
 
+```js
+import { pushableV } from 'it-pushable'
+import all from 'it-all'
+
+const source = pushableV()
+
+source.push(1)
+source.push(2)
+source.push(3)
+source.end()
+
+console.info(await all(source))
+/*
+Output:
+[1, 2, 3]
+*/
+```
+
 ## API
 
 ### `pushable([options])`
@@ -49,9 +68,10 @@ Create a new async iterable. The values yielded from calls to `.next()` or when 
 `options` is an _optional_ parameter, an object with the following properties:
 
 * `onEnd` - a function called after _all_ values have been yielded from the iterator (including buffered values). In the case when the iterator is ended with an error it will be passed the error as a parameter.
-* `writev` - a boolean used to signal that the consumer of this iterable supports processing multiple buffered chunks at a time. When this option is set to `true` values yielded from the iterable will be arrays.
 
-Note: the `onEnd` function may be passed instead of `options`.
+### `pushableV([options])`
+
+Similar to `pushable`, except it yields multiple buffered chunks at a time. All values yielded from the iterable will be arrays.
 
 ## Related
 

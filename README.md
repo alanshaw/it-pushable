@@ -52,7 +52,7 @@ source.end()
 console.info(await all(source))
 /*
 Output:
-[1, 2, 3]
+[ [1, 2, 3] ]
 */
 ```
 

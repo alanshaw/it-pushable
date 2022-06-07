@@ -1,4 +1,4 @@
-import { expect } from 'aegir/utils/chai.js'
+import { expect } from 'aegir/chai'
 import { pipe } from 'it-pipe'
 import { pushable, pushableV } from '../src/index.js'
 import all from 'it-all'
@@ -283,5 +283,9 @@ describe('it-pushable', () => {
 
     await expect(pipe(source, async (source) => await all(source)))
       .to.eventually.be.rejected.with.property('message', 'boom')
+  })
+
+  it('should support a high watermark', () => {
+
   })
 })

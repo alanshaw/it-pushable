@@ -284,8 +284,4 @@ describe('it-pushable', () => {
     await expect(pipe(source, async (source) => await all(source)))
       .to.eventually.be.rejected.with.property('message', 'boom')
   })
-
-  it('should support a high watermark', () => {
-
-  })
 })

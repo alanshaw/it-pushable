@@ -1,45 +1,54 @@
 import { FIFO } from './fifo.js'
+import type { Next } from './fifo.js'
 
-interface BasePushable<T> {
-  end: (err?: Error) => this
-  push: (value: T) => this
-  next: () => Promise<Next<T>>
-  return: () => { done: boolean }
-  throw: (err: Error) => { done: boolean }
+type BasePushable<PushType, ReturnType, YieldType = PushType> = AsyncGenerator<YieldType, void, unknown> & {
+  push: (value: PushType) => Promise<ReturnType>
+  end: (err?: Error) => Promise<ReturnType>
 }
 
-export interface Pushable<T> extends AsyncIterable<T>, BasePushable<T> {}
-export interface PushableV<T> extends AsyncIterable<T[]>, BasePushable<T> {}
+export interface Pushable<T> extends BasePushable<T, Pushable<T>> {}
+export interface PushableV<T> extends BasePushable<T, PushableV<T>, T[]> {}
 
 export interface Options {
-  onEnd?: (err?: Error) => void
+  highWaterMark?: number
+  objectMode?: boolean
+  onEnd?: (err?: Error) => void | Promise<void>
 }
 
-interface Next<T> {
-  done?: boolean
-  error?: Error
-  value?: T
+export interface ObjectPushableOptions extends Options {
+  objectMode: true
 }
 
-type NextResult<T> = { done: false, value: T} | { done: true }
+export interface BytePushableOptions extends Options {
+  objectMode?: false
+}
 
-interface getNext<T, V = T> { (buffer: FIFO<Next<T>>): NextResult<V> }
+interface getNext<T, V = T> { (buffer: FIFO<T>): Promise<IteratorResult<V>> }
 
-export function pushable<T> (options?: Options): Pushable<T> {
-  const getNext = (buffer: FIFO<Next<T>>): NextResult<T> => {
+export function pushable (options?: BytePushableOptions): Pushable<Uint8Array>
+export function pushable<T> (options: ObjectPushableOptions): Pushable<T>
+export function pushable<T> (options: Options = {}): Pushable<T> {
+  const getNext = async (buffer: FIFO<T>): Promise<IteratorResult<T>> => {
     const next: Next<T> | undefined = buffer.shift()
 
     if (next == null) {
-      return { done: true }
+      return { done: true, value: undefined }
     }
 
     if (next.error != null) {
       throw next.error
     }
 
+    if (next.done === true) {
+      return {
+        done: true,
+        value: undefined
+      }
+    }
+
+    // @ts-expect-error next.value can be undefined when it should only be T - see test 'should buffer falsy input'
     return {
-      done: next.done === true,
-      // @ts-expect-error
+      done: false,
       value: next.value
     }
   }
@@ -47,8 +56,10 @@ export function pushable<T> (options?: Options): Pushable<T> {
   return _pushable<T, T, Pushable<T>>(getNext, options)
 }
 
-export function pushableV<T> (options?: Options): PushableV<T> {
-  const getNext = (buffer: FIFO<Next<T>>): NextResult<T[]> => {
+export function pushableV (options?: BytePushableOptions): PushableV<Uint8Array>
+export function pushableV<T> (options: ObjectPushableOptions): PushableV<T>
+export function pushableV<T> (options: Options = {}): PushableV<T> {
+  const getNext = async (buffer: FIFO<T>): Promise<IteratorResult<T[]>> => {
     let next: Next<T> | undefined
     const values: T[] = []
 
@@ -64,17 +75,20 @@ export function pushableV<T> (options?: Options): PushableV<T> {
       }
 
       if (next.done === false) {
-        // @ts-expect-error
+        // @ts-expect-error next.value can be undefined when it should only be T - see test 'should buffer falsy input'
         values.push(next.value)
       }
     }
 
-    if (next == null) {
-      return { done: true }
+    if (next == null || next.done === true) {
+      return {
+        done: true,
+        value: []
+      }
     }
 
     return {
-      done: next.done === true,
+      done: false,
       value: values
     }
   }
@@ -82,27 +96,27 @@ export function pushableV<T> (options?: Options): PushableV<T> {
   return _pushable<T, T[], PushableV<T>>(getNext, options)
 }
 
-function _pushable<PushType, ValueType, ReturnType> (getNext: getNext<PushType, ValueType>, options?: Options): ReturnType {
+function _pushable<PushType, YieldType, ReturnType> (getNext: getNext<PushType, YieldType>, options?: Options): ReturnType {
   options = options ?? {}
   let onEnd = options.onEnd
-  let buffer = new FIFO<Next<PushType>>()
+  let buffer = new FIFO<PushType>(options)
   let pushable: any
-  let onNext: ((next: Next<PushType>) => ReturnType) | null
+  let onNext: ((next: Next<PushType>) => Promise<ReturnType>) | null
   let ended: boolean
 
-  const waitNext = async (): Promise<NextResult<ValueType>> => {
+  const waitNext = async (): Promise<IteratorResult<YieldType>> => {
     if (!buffer.isEmpty()) {
-      return getNext(buffer)
+      return await getNext(buffer)
     }
 
     if (ended) {
-      return { done: true }
+      return { done: true, value: undefined }
     }
 
     return await new Promise((resolve, reject) => {
-      onNext = (next: Next<PushType>) => {
+      onNext = async (next: Next<PushType>) => {
         onNext = null
-        buffer.push(next)
+        await buffer.push(next)
 
         try {
           resolve(getNext(buffer))
@@ -115,49 +129,55 @@ function _pushable<PushType, ValueType, ReturnType> (getNext: getNext<PushType, 
     })
   }
 
-  const bufferNext = (next: Next<PushType>) => {
+  const bufferNext = async (next: Next<PushType>) => {
     if (onNext != null) {
-      return onNext(next)
+      return await onNext(next)
     }
 
-    buffer.push(next)
+    await buffer.push(next)
     return pushable
   }
 
-  const bufferError = (err: Error) => {
+  const bufferError = async (err: Error) => {
     buffer = new FIFO()
 
     if (onNext != null) {
-      return onNext({ error: err })
+      return await onNext({ error: err })
     }
 
-    buffer.push({ error: err })
+    await buffer.push({ error: err })
+
     return pushable
   }
 
-  const push = (value: PushType) => {
+  const push = async (value: PushType): Promise<ReturnType> => {
     if (ended) {
       return pushable
     }
 
-    return bufferNext({ done: false, value })
+    await bufferNext({ done: false, value })
+
+    return pushable
   }
-  const end = (err?: Error) => {
-    if (ended) return pushable
+  const end = async (err?: Error): Promise<ReturnType> => {
+    if (ended) {
+      return pushable
+    }
+
     ended = true
 
-    return (err != null) ? bufferError(err) : bufferNext({ done: true })
+    return (err != null) ? await bufferError(err) : await bufferNext({ done: true })
   }
-  const _return = () => {
-    buffer = new FIFO()
-    end()
+  const _return = async (): Promise<IteratorResult<YieldType>> => {
+    buffer.clear()
+    await end()
 
-    return { done: true }
+    return { done: true, value: undefined }
   }
-  const _throw = (err: Error) => {
-    end(err)
+  const _throw = async (err: Error): Promise<IteratorResult<YieldType>> => {
+    await end(err)
 
-    return { done: true }
+    return { done: true, value: undefined }
   }
 
   pushable = {
@@ -180,32 +200,32 @@ function _pushable<PushType, ValueType, ReturnType> (getNext: getNext<PushType, 
     next () {
       return _pushable.next()
     },
-    throw (err: Error) {
+    async throw (err: Error) {
       _pushable.throw(err)
 
       if (onEnd != null) {
-        onEnd(err)
+        await onEnd(err)
         onEnd = undefined
       }
 
-      return { done: true }
+      return { done: true, value: undefined }
     },
-    return () {
+    async return () {
       _pushable.return()
 
       if (onEnd != null) {
-        onEnd()
+        await onEnd()
         onEnd = undefined
       }
 
-      return { done: true }
+      return { done: true, value: undefined }
     },
     push,
-    end (err: Error) {
+    async end (err?: Error) {
       _pushable.end(err)
 
       if (onEnd != null) {
-        onEnd(err)
+        await onEnd(err)
         onEnd = undefined
       }
 

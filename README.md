@@ -1,7 +1,6 @@
 # it-pushable
 
 [![Build Status](https://github.com/alanshaw/it-pushable/actions/workflows/js-test-and-release.yml/badge.svg?branch=master)](https://github.com/alanshaw/it-pushable/actions/workflows/js-test-and-release.yml)
-[![Dependencies Status](https://david-dm.org/alanshaw/it-pushable/status.svg)](https://david-dm.org/alanshaw/it-pushable)
 [![JavaScript Style Guide](https://img.shields.io/badge/code_style-standard-brightgreen.svg)](https://standardjs.com)
 
 > An iterable that you can push values into
@@ -18,6 +17,30 @@ npm install it-pushable
 import { pushable } from 'it-pushable'
 
 const source = pushable()
+await source.push(Uint8Array.from([0]))
+await source.push(Uint8Array.from([1]))
+await source.push(Uint8Array.from([2]))
+await source.end()
+
+for await (const arr of source) {
+  console.log(arr)
+}
+/*
+Output:
+Uint8Array[0]
+Uint8Array[1]
+Uint8Array[2]
+*/
+```
+
+We can also push non-`Uint8Array`s by specifying the `objectMode` option:
+
+```js
+import { pushable } from 'it-pushable'
+
+const source = pushable({
+  objectMode: true
+})
 
 setTimeout(() => source.push('hello'), 100)
 setTimeout(() => source.push('world'), 200)
@@ -42,12 +65,14 @@ done after 309ms
 import { pushableV } from 'it-pushable'
 import all from 'it-all'
 
-const source = pushableV()
+const source = pushableV({
+  objectMode: true
+})
 
-source.push(1)
-source.push(2)
-source.push(3)
-source.end()
+await source.push(1)
+await source.push(2)
+await source.push(3)
+await source.end()
 
 console.info(await all(source))
 /*
@@ -68,6 +93,8 @@ Create a new async iterable. The values yielded from calls to `.next()` or when 
 `options` is an _optional_ parameter, an object with the following properties:
 
 * `onEnd` - a function called after _all_ values have been yielded from the iterator (including buffered values). In the case when the iterator is ended with an error it will be passed the error as a parameter.
+* `objectMode` - a boolean value that means non-`Uint8Array`s will be passed to `.push`, default: `false`
+* `highWaterMark` - a threshold beyond which calls to `.push` will wait for previously pushed items to be consumed.  If `objectMode` is `false`, this number is interpreted as the total number of bytes that the queue should hold, otherwise it is the number of items in the queue
 
 ### `pushableV([options])`
 

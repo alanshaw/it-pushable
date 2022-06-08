@@ -1,3 +1,15 @@
+### [2.0.2](https://github.com/alanshaw/it-pushable/compare/v2.0.1...v2.0.2) (2022-06-08)
+
+
+### Bug Fixes
+
+* update aegir ([#24](https://github.com/alanshaw/it-pushable/issues/24)) ([9c1a478](https://github.com/alanshaw/it-pushable/commit/9c1a4783a536d90bcede5d29cc2d66d2a0d5321a))
+
+
+### Trivial Changes
+
+* update publish command ([#25](https://github.com/alanshaw/it-pushable/issues/25)) ([b82173f](https://github.com/alanshaw/it-pushable/commit/b82173f3c7d07581e1ece3ed3026ccbbf6c57056))
+
 ### [2.0.1](https://github.com/alanshaw/it-pushable/compare/v2.0.0...v2.0.1) (2022-01-13)
 
 

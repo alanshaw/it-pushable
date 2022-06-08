@@ -413,6 +413,13 @@ describe('it-pushable', () => {
     // should resolve now we've freed up space in the queue
     await expect(p).to.eventually.equal(source)
   })
+
+  it('should throw if passed an object when objectMode is false', async () => {
+    const source = pushable()
+
+    // @ts-expect-error incorrect argument type
+    await expect(source.push('hello')).to.eventually.be.rejected.with.property('message').that.includes('tried to push non-Uint8Array value')
+  })
 })
 
 async function pTimeout <T> (p: Promise<T>, timeout: number): Promise<T> {

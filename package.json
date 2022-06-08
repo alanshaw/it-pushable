@@ -137,5 +137,8 @@
   "bugs": {
     "url": "https://github.com/alanshaw/it-pushable/issues"
   },
-  "homepage": "https://github.com/alanshaw/it-pushable#readme"
+  "homepage": "https://github.com/alanshaw/it-pushable#readme",
+  "dependencies": {
+    "p-defer": "^4.0.0"
+  }
 }

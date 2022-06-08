@@ -420,6 +420,21 @@ describe('it-pushable', () => {
     // @ts-expect-error incorrect argument type
     await expect(source.push('hello')).to.eventually.be.rejected.with.property('message').that.includes('tried to push non-Uint8Array value')
   })
+
+  it('should push values over the high water mark without awaiting', async () => {
+    const highWaterMark = 1
+    const source = pushable<number>({
+      highWaterMark,
+      objectMode: true
+    })
+
+    void source.push(1)
+    void source.push(2)
+    void source.push(3)
+    void source.end()
+
+    await expect(all(source)).to.eventually.deep.equal([1, 2, 3])
+  })
 })
 
 async function pTimeout <T> (p: Promise<T>, timeout: number): Promise<T> {

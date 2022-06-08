@@ -45,7 +45,10 @@ export class FIFO<T> {
     }
 
     // wait for a slot in the queue to become available
-    this.deferred = defer()
+    if (this.deferred == null) {
+      this.deferred = defer()
+    }
+
     await this.deferred.promise
 
     // try again

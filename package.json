@@ -114,7 +114,7 @@
     "test:firefox-webworker": "aegir test -t webworker -- --browser firefox",
     "test:node": "aegir test -t node --cov",
     "test:electron-main": "aegir test -t electron-main",
-    "release": "npm run release"
+    "release": "aegir release"
   },
   "keywords": [
     "push",

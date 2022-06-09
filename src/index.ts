@@ -1,45 +1,42 @@
 import { FIFO } from './fifo.js'
+import type { Next } from './fifo.js'
 
-interface BasePushable<T> {
-  end: (err?: Error) => this
-  push: (value: T) => this
-  next: () => Promise<Next<T>>
-  return: () => { done: boolean }
-  throw: (err: Error) => { done: boolean }
+type BasePushable<PushType, ReturnType, YieldType = PushType> = AsyncGenerator<YieldType, void, unknown> & {
+  push: (value: PushType) => ReturnType
+  end: (err?: Error) => ReturnType
 }
 
-export interface Pushable<T> extends AsyncIterable<T>, BasePushable<T> {}
-export interface PushableV<T> extends AsyncIterable<T[]>, BasePushable<T> {}
+export interface Pushable<T> extends BasePushable<T, Pushable<T>> {}
+export interface PushableV<T> extends BasePushable<T, PushableV<T>, T[]> {}
 
 export interface Options {
   onEnd?: (err?: Error) => void
 }
 
-interface Next<T> {
-  done?: boolean
-  error?: Error
-  value?: T
-}
+interface getNext<T, V = T> { (buffer: FIFO<T>): Promise<IteratorResult<V>> }
 
-type NextResult<T> = { done: false, value: T} | { done: true }
-
-interface getNext<T, V = T> { (buffer: FIFO<Next<T>>): NextResult<V> }
-
-export function pushable<T> (options?: Options): Pushable<T> {
-  const getNext = (buffer: FIFO<Next<T>>): NextResult<T> => {
+export function pushable<T> (options: Options = {}): Pushable<T> {
+  const getNext = async (buffer: FIFO<T>): Promise<IteratorResult<T>> => {
     const next: Next<T> | undefined = buffer.shift()
 
     if (next == null) {
-      return { done: true }
+      return { done: true, value: undefined }
     }
 
     if (next.error != null) {
       throw next.error
     }
 
+    if (next.done === true) {
+      return {
+        done: true,
+        value: undefined
+      }
+    }
+
+    // @ts-expect-error next.value can be undefined when it should only be T - see test 'should buffer falsy input'
     return {
-      done: next.done === true,
-      // @ts-expect-error
+      done: false,
       value: next.value
     }
   }
@@ -47,8 +44,8 @@ export function pushable<T> (options?: Options): Pushable<T> {
   return _pushable<T, T, Pushable<T>>(getNext, options)
 }
 
-export function pushableV<T> (options?: Options): PushableV<T> {
-  const getNext = (buffer: FIFO<Next<T>>): NextResult<T[]> => {
+export function pushableV<T> (options: Options = {}): PushableV<T> {
+  const getNext = async (buffer: FIFO<T>): Promise<IteratorResult<T[]>> => {
     let next: Next<T> | undefined
     const values: T[] = []
 
@@ -64,17 +61,20 @@ export function pushableV<T> (options?: Options): PushableV<T> {
       }
 
       if (next.done === false) {
-        // @ts-expect-error
+        // @ts-expect-error next.value can be undefined when it should only be T - see test 'should buffer falsy input'
         values.push(next.value)
       }
     }
 
-    if (next == null) {
-      return { done: true }
+    if (next == null || next.done === true) {
+      return {
+        done: true,
+        value: []
+      }
     }
 
     return {
-      done: next.done === true,
+      done: false,
       value: values
     }
   }
@@ -82,21 +82,21 @@ export function pushableV<T> (options?: Options): PushableV<T> {
   return _pushable<T, T[], PushableV<T>>(getNext, options)
 }
 
-function _pushable<PushType, ValueType, ReturnType> (getNext: getNext<PushType, ValueType>, options?: Options): ReturnType {
+function _pushable<PushType, YieldType, ReturnType> (getNext: getNext<PushType, YieldType>, options?: Options): ReturnType {
   options = options ?? {}
   let onEnd = options.onEnd
-  let buffer = new FIFO<Next<PushType>>()
+  let buffer = new FIFO<PushType>()
   let pushable: any
   let onNext: ((next: Next<PushType>) => ReturnType) | null
   let ended: boolean
 
-  const waitNext = async (): Promise<NextResult<ValueType>> => {
+  const waitNext = async (): Promise<IteratorResult<YieldType>> => {
     if (!buffer.isEmpty()) {
-      return getNext(buffer)
+      return await getNext(buffer)
     }
 
     if (ended) {
-      return { done: true }
+      return { done: true, value: undefined }
     }
 
     return await new Promise((resolve, reject) => {

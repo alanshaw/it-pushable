@@ -200,7 +200,7 @@ describe('it-pushable', () => {
           output.push(value)
         }
       }
-      source.return()
+      await source.return()
     })()
   })
 
@@ -220,7 +220,7 @@ describe('it-pushable', () => {
 
     void (async () => {
       await source.next()
-      source.return()
+      await source.return()
       await source.next()
     })()
   })
@@ -251,7 +251,7 @@ describe('it-pushable', () => {
           output.push(value)
         }
       }
-      source.throw(new Error('boom'))
+      await source.throw(new Error('boom'))
     })()
   })
 

@@ -1,7 +1,15 @@
 // ported from https://www.npmjs.com/package/fast-fifo
 
+export interface Next<T> {
+  done?: boolean
+  error?: Error
+  value?: T
+}
+
+export type NextResult<T> = { done: false, value: T} | { done: true }
+
 class FixedFIFO<T> {
-  public buffer: Array<T | undefined>
+  public buffer: Array<Next<T> | undefined>
   private readonly mask: number
   private top: number
   private btm: number
@@ -19,7 +27,7 @@ class FixedFIFO<T> {
     this.next = null
   }
 
-  push (data: T) {
+  push (data: Next<T>) {
     if (this.buffer[this.top] !== undefined) {
       return false
     }
@@ -58,7 +66,7 @@ export class FIFO<T> {
     this.tail = this.head
   }
 
-  push (val: T) {
+  push (val: Next<T>) {
     if (!this.head.push(val)) {
       const prev = this.head
       this.head = prev.next = new FixedFIFO<T>(2 * this.head.buffer.length)

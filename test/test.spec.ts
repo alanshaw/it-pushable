@@ -187,7 +187,13 @@ describe('it-pushable', () => {
       }
     })
 
-    input.forEach((v, i) => setTimeout(() => source.push(v), i * 10))
+    let index = 0
+    input.forEach((v, i) => {
+      setTimeout(() => {
+        source.push(input[index])
+        index++
+      }, i * 10)
+    })
     setTimeout(() => source.end(), input.length * 10)
 
     void (async () => {

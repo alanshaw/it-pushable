@@ -1,3 +1,19 @@
+## [3.0.0](https://github.com/alanshaw/it-pushable/compare/v2.0.2...v3.0.0) (2022-06-10)
+
+
+### ⚠ BREAKING CHANGES
+
+* `Uint8Array`s are expected by default, pass `objectMode: true` to push any other data types. If using TypeScript, use generics to define the data type.
+
+### Features
+
+* add readableLength property ([#27](https://github.com/alanshaw/it-pushable/issues/27)) ([f45aee3](https://github.com/alanshaw/it-pushable/commit/f45aee36e72e754b8a27dda48d3051c470aaa8e5))
+
+
+### Trivial Changes
+
+* fix flaky test ([#28](https://github.com/alanshaw/it-pushable/issues/28)) ([8c3dcc1](https://github.com/alanshaw/it-pushable/commit/8c3dcc1f8e64f2877317a835bb03545f7fa2dd53))
+
 ### [2.0.2](https://github.com/alanshaw/it-pushable/compare/v2.0.1...v2.0.2) (2022-06-08)
 
 

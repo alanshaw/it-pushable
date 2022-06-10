@@ -5,7 +5,9 @@ import all from 'it-all'
 
 describe('it-pushable', () => {
   it('should push input slowly', async () => {
-    const source = pushable()
+    const source = pushable<number>({
+      objectMode: true
+    })
     const input = [1, 2, 3]
     for (let i = 0; i < input.length; i++) {
       setTimeout(() => source.push(input[i]), i * 10)
@@ -16,7 +18,9 @@ describe('it-pushable', () => {
   })
 
   it('should buffer input', async () => {
-    const source = pushable()
+    const source = pushable<number>({
+      objectMode: true
+    })
     const input = [1, 2, 3]
     input.forEach(v => source.push(v))
     setTimeout(() => source.end())
@@ -25,7 +29,9 @@ describe('it-pushable', () => {
   })
 
   it('should buffer falsy input', async () => {
-    const source = pushable()
+    const source = pushable<number | undefined | null>({
+      objectMode: true
+    })
     const input = [1, 2, 3, undefined, null, 0, 4]
     input.forEach(v => source.push(v))
     setTimeout(() => source.end())
@@ -34,7 +40,9 @@ describe('it-pushable', () => {
   })
 
   it('should buffer some inputs', async () => {
-    const source = pushable<number | number[]>()
+    const source = pushable<number | number[]>({
+      objectMode: true
+    })
     const input = [1, [2.1, 2.2, 2.3], 3, 4, 5, [6.1, 6.2, 6.3, 6.4], 7]
     for (let i = 0; i < input.length; i++) {
       setTimeout(() => {
@@ -52,7 +60,9 @@ describe('it-pushable', () => {
   })
 
   it('should allow end before start', async () => {
-    const source = pushable()
+    const source = pushable<number>({
+      objectMode: true
+    })
     const input = [1, 2, 3]
     input.forEach(v => source.push(v))
     source.end()
@@ -61,7 +71,9 @@ describe('it-pushable', () => {
   })
 
   it('should end with error immediately', async () => {
-    const source = pushable()
+    const source = pushable<number>({
+      objectMode: true
+    })
     const input = [1, 2, 3]
     input.forEach(v => source.push(v))
     source.end(new Error('boom'))
@@ -71,7 +83,9 @@ describe('it-pushable', () => {
   })
 
   it('should end with error in the middle', async () => {
-    const source = pushable()
+    const source = pushable<number | Error>({
+      objectMode: true
+    })
     const input = [1, new Error('boom'), 3]
     for (let i = 0; i < input.length; i++) {
       setTimeout(() => {
@@ -97,7 +111,9 @@ describe('it-pushable', () => {
   })
 
   it('should allow next after end', async () => {
-    const source = pushable<number>()
+    const source = pushable<number>({
+      objectMode: true
+    })
     const input = [1]
     source.push(input[0])
     let next = await source.next()
@@ -111,7 +127,8 @@ describe('it-pushable', () => {
   })
 
   it('should call onEnd', (done) => {
-    const source = pushable({
+    const source = pushable<number>({
+      objectMode: true,
       onEnd: () => done()
     })
     const input = [1, 2, 3]
@@ -123,7 +140,10 @@ describe('it-pushable', () => {
   })
 
   it('should call onEnd if passed in options object', (done) => {
-    const source = pushable({ onEnd: () => done() })
+    const source = pushable<number>({
+      objectMode: true,
+      onEnd: () => done()
+    })
     const input = [1, 2, 3]
     for (let i = 0; i < input.length; i++) {
       setTimeout(() => source.push(input[i]), i * 10)
@@ -156,6 +176,7 @@ describe('it-pushable', () => {
     const output: number[] = []
 
     const source = pushable<number>({
+      objectMode: true,
       onEnd: () => {
         expect(output).to.deep.equal(input.slice(0, max))
         done()
@@ -181,6 +202,7 @@ describe('it-pushable', () => {
     const output: number[] = []
 
     const source = pushable<number>({
+      objectMode: true,
       onEnd: () => {
         expect(output).to.deep.equal(input.slice(0, max))
         done()
@@ -214,7 +236,8 @@ describe('it-pushable', () => {
     const input = [1, 2, 3, 4, 5]
 
     let count = 0
-    const source = pushable({
+    const source = pushable<number>({
+      objectMode: true,
       onEnd: () => {
         count++
         expect(count).to.equal(1)
@@ -237,6 +260,7 @@ describe('it-pushable', () => {
     const output: number[] = []
 
     const source = pushable<number>({
+      objectMode: true,
       onEnd: err => {
         expect(err).to.have.property('message', 'boom')
         expect(output).to.deep.equal(input.slice(0, max))
@@ -262,7 +286,9 @@ describe('it-pushable', () => {
   })
 
   it('should support writev', async () => {
-    const source = pushableV<number>()
+    const source = pushableV<number>({
+      objectMode: true
+    })
     const input = [1, 2, 3]
     input.forEach(v => source.push(v))
     setTimeout(() => source.end())
@@ -271,7 +297,9 @@ describe('it-pushable', () => {
   })
 
   it('should always yield arrays when using writev', async () => {
-    const source = pushableV<number>()
+    const source = pushableV<number>({
+      objectMode: true
+    })
     const input = [1, 2, 3]
     setTimeout(() => {
       input.forEach(v => source.push(v))
@@ -282,12 +310,59 @@ describe('it-pushable', () => {
   })
 
   it('should support writev and end with error', async () => {
-    const source = pushableV<number>()
+    const source = pushableV<number>({
+      objectMode: true
+    })
     const input = [1, 2, 3]
     input.forEach(v => source.push(v))
     source.end(new Error('boom'))
 
     await expect(pipe(source, async (source) => await all(source)))
       .to.eventually.be.rejected.with.property('message', 'boom')
+  })
+
+  it('should support readableLength for objects', async () => {
+    const source = pushable<number>({
+      objectMode: true
+    })
+
+    expect(source).to.have.property('readableLength', 0)
+
+    await source.push(1)
+    expect(source).to.have.property('readableLength', 1)
+
+    await source.push(1)
+    expect(source).to.have.property('readableLength', 2)
+
+    await source.next()
+    expect(source).to.have.property('readableLength', 1)
+
+    await source.next()
+    expect(source).to.have.property('readableLength', 0)
+  })
+
+  it('should support readableLength for bytes', async () => {
+    const source = pushable()
+
+    expect(source).to.have.property('readableLength', 0)
+
+    await source.push(Uint8Array.from([1, 2]))
+    expect(source).to.have.property('readableLength', 2)
+
+    await source.push(Uint8Array.from([3, 4, 5]))
+    expect(source).to.have.property('readableLength', 5)
+
+    await source.next()
+    expect(source).to.have.property('readableLength', 3)
+
+    await source.next()
+    expect(source).to.have.property('readableLength', 0)
+  })
+
+  it('should throw if passed an object when objectMode is false', async () => {
+    const source = pushable()
+
+    // @ts-expect-error incorrect argument type
+    expect(() => source.push('hello')).to.throw().with.property('message').that.includes('tried to push non-Uint8Array value')
   })
 })

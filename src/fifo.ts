@@ -1,7 +1,12 @@
 // ported from https://www.npmjs.com/package/fast-fifo
 
+export interface Next<T> {
+  done?: boolean
+  error?: Error
+  value?: T
+}
 class FixedFIFO<T> {
-  public buffer: Array<T | undefined>
+  public buffer: Array<Next<T> | undefined>
   private readonly mask: number
   private top: number
   private btm: number
@@ -19,7 +24,7 @@ class FixedFIFO<T> {
     this.next = null
   }
 
-  push (data: T) {
+  push (data: Next<T>) {
     if (this.buffer[this.top] !== undefined) {
       return false
     }
@@ -47,18 +52,48 @@ class FixedFIFO<T> {
   }
 }
 
+export interface FIFOOptions {
+  /**
+   * When the queue reaches this size, it will be split into head/tail parts
+   */
+  splitLimit?: number
+
+  /**
+   * If true, `size` will be the number of items in the queue. If false, all
+   * values will be interpreted as Uint8Arrays and `size` will be the total
+   * number of bytes in the queue.
+   */
+  objectMode?: boolean
+}
+
 export class FIFO<T> {
+  public size: number
   private readonly hwm: number
   private head: FixedFIFO<T>
   private tail: FixedFIFO<T>
+  private readonly objectMode: boolean
 
-  constructor (hwm?: number) {
-    this.hwm = hwm ?? 16
+  constructor (options: FIFOOptions = {}) {
+    this.hwm = options.splitLimit ?? 16
     this.head = new FixedFIFO<T>(this.hwm)
     this.tail = this.head
+    this.size = 0
+    this.objectMode = Boolean(options.objectMode)
   }
 
-  push (val: T) {
+  push (val: Next<T>) {
+    if (val?.value != null) {
+      if (this.objectMode) {
+        if (val.value != null) {
+          this.size++
+        }
+      } else if (val.value instanceof Uint8Array) {
+        this.size += val.value.byteLength
+      } else {
+        throw new Error('objectMode was false but tried to push non-Uint8Array value')
+      }
+    }
+
     if (!this.head.push(val)) {
       const prev = this.head
       this.head = prev.next = new FixedFIFO<T>(2 * this.head.buffer.length)
@@ -67,13 +102,23 @@ export class FIFO<T> {
   }
 
   shift () {
-    const val = this.tail.shift()
+    let val = this.tail.shift()
 
     if (val === undefined && (this.tail.next != null)) {
       const next = this.tail.next
       this.tail.next = null
       this.tail = next
-      return this.tail.shift()
+      val = this.tail.shift()
+    }
+
+    if (val?.value != null) {
+      if (this.objectMode) {
+        this.size--
+      } else if (val.value instanceof Uint8Array) {
+        this.size -= val.value.byteLength
+      } else {
+        throw new Error('objectMode was false but tried to shift non-Uint8Array value')
+      }
     }
 
     return val

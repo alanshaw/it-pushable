@@ -1,4 +1,4 @@
-import { FIFO } from './fifo.js'
+import { FIFO, Next } from './fifo.js'
 
 interface BasePushable<T> {
   end: (err?: Error) => this
@@ -6,27 +6,37 @@ interface BasePushable<T> {
   next: () => Promise<Next<T>>
   return: () => { done: boolean }
   throw: (err: Error) => { done: boolean }
+
+  /**
+   * This property contains the number of bytes (or objects) in the queue ready to be read
+   */
+  readableLength: number
 }
 
 export interface Pushable<T> extends AsyncIterable<T>, BasePushable<T> {}
 export interface PushableV<T> extends AsyncIterable<T[]>, BasePushable<T> {}
 
 export interface Options {
+  objectMode?: boolean
   onEnd?: (err?: Error) => void
-}
-
-interface Next<T> {
-  done?: boolean
-  error?: Error
-  value?: T
 }
 
 type NextResult<T> = { done: false, value: T} | { done: true }
 
-interface getNext<T, V = T> { (buffer: FIFO<Next<T>>): NextResult<V> }
+interface getNext<T, V = T> { (buffer: FIFO<T>): NextResult<V> }
 
-export function pushable<T> (options?: Options): Pushable<T> {
-  const getNext = (buffer: FIFO<Next<T>>): NextResult<T> => {
+export interface ObjectPushableOptions extends Options {
+  objectMode: true
+}
+
+export interface BytePushableOptions extends Options {
+  objectMode?: false
+}
+
+export function pushable (options?: BytePushableOptions): Pushable<Uint8Array>
+export function pushable<T> (options: ObjectPushableOptions): Pushable<T>
+export function pushable<T> (options: Options = {}): Pushable<T> {
+  const getNext = (buffer: FIFO<T>): NextResult<T> => {
     const next: Next<T> | undefined = buffer.shift()
 
     if (next == null) {
@@ -47,8 +57,10 @@ export function pushable<T> (options?: Options): Pushable<T> {
   return _pushable<T, T, Pushable<T>>(getNext, options)
 }
 
-export function pushableV<T> (options?: Options): PushableV<T> {
-  const getNext = (buffer: FIFO<Next<T>>): NextResult<T[]> => {
+export function pushableV (options?: BytePushableOptions): PushableV<Uint8Array>
+export function pushableV<T> (options: ObjectPushableOptions): PushableV<T>
+export function pushableV<T> (options: Options = {}): PushableV<T> {
+  const getNext = (buffer: FIFO<T>): NextResult<T[]> => {
     let next: Next<T> | undefined
     const values: T[] = []
 
@@ -85,7 +97,7 @@ export function pushableV<T> (options?: Options): PushableV<T> {
 function _pushable<PushType, ValueType, ReturnType> (getNext: getNext<PushType, ValueType>, options?: Options): ReturnType {
   options = options ?? {}
   let onEnd = options.onEnd
-  let buffer = new FIFO<Next<PushType>>()
+  let buffer = new FIFO<PushType>(options)
   let pushable: any
   let onNext: ((next: Next<PushType>) => ReturnType) | null
   let ended: boolean
@@ -166,7 +178,10 @@ function _pushable<PushType, ValueType, ReturnType> (getNext: getNext<PushType, 
     return: _return,
     throw: _throw,
     push,
-    end
+    end,
+    get readableLength () {
+      return buffer.size
+    }
   }
 
   if (onEnd == null) {
@@ -210,6 +225,9 @@ function _pushable<PushType, ValueType, ReturnType> (getNext: getNext<PushType, 
       }
 
       return pushable
+    },
+    get readableLength () {
+      return _pushable.readableLength
     }
   }
 

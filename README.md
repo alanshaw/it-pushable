@@ -64,10 +64,12 @@ Create a new async iterable. The values yielded from calls to `.next()` or when 
 
 * `.push(value)` - push a value into the iterable. Values are yielded from the iterable in the order they are pushed. Values not yet consumed from the iterable are buffered
 * `.end([err])` - end the iterable after all values in the buffer (if any) have been yielded. If an error is passed the buffer is cleared immediately and the next iteration will throw the passed error
+* `.readableLength` - a number that represents the size of the queue. if `objectMode` is true, this is the number of objects in the queue, if false it's the total number of bytes in the queue
 
 `options` is an _optional_ parameter, an object with the following properties:
 
 * `onEnd` - a function called after _all_ values have been yielded from the iterator (including buffered values). In the case when the iterator is ended with an error it will be passed the error as a parameter.
+* `objectMode` - a boolean value that means non-`Uint8Array`s will be passed to `.push`, default: `false`
 
 ### `pushableV([options])`
 

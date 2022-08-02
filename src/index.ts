@@ -33,7 +33,7 @@ export interface BytePushableOptions extends Options {
   objectMode?: false
 }
 
-export function pushable (options?: BytePushableOptions): Pushable<Uint8Array>
+export function pushable<T extends { byteLength: number } = Uint8Array> (options?: BytePushableOptions): Pushable<T>
 export function pushable<T> (options: ObjectPushableOptions): Pushable<T>
 export function pushable<T> (options: Options = {}): Pushable<T> {
   const getNext = (buffer: FIFO<T>): NextResult<T> => {
@@ -57,7 +57,7 @@ export function pushable<T> (options: Options = {}): Pushable<T> {
   return _pushable<T, T, Pushable<T>>(getNext, options)
 }
 
-export function pushableV (options?: BytePushableOptions): PushableV<Uint8Array>
+export function pushableV<T extends { byteLength: number } = Uint8Array> (options?: BytePushableOptions): PushableV<T>
 export function pushableV<T> (options: ObjectPushableOptions): PushableV<T>
 export function pushableV<T> (options: Options = {}): PushableV<T> {
   const getNext = (buffer: FIFO<T>): NextResult<T[]> => {
@@ -97,7 +97,7 @@ export function pushableV<T> (options: Options = {}): PushableV<T> {
 function _pushable<PushType, ValueType, ReturnType> (getNext: getNext<PushType, ValueType>, options?: Options): ReturnType {
   options = options ?? {}
   let onEnd = options.onEnd
-  let buffer = new FIFO<PushType>(options)
+  let buffer = new FIFO<PushType>()
   let pushable: any
   let onNext: ((next: Next<PushType>) => ReturnType) | null
   let ended: boolean
@@ -150,6 +150,11 @@ function _pushable<PushType, ValueType, ReturnType> (getNext: getNext<PushType, 
   const push = (value: PushType) => {
     if (ended) {
       return pushable
+    }
+
+    // @ts-expect-error `byteLength` is not declared on PushType
+    if (options?.objectMode !== true && value?.byteLength == null) {
+      throw new Error('objectMode was not true but tried to push non-Uint8Array value')
     }
 
     return bufferNext({ done: false, value })

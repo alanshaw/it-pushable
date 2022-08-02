@@ -128,7 +128,8 @@
     "@types/fast-fifo": "^1.0.0",
     "aegir": "^37.0.17",
     "it-all": "^1.0.6",
-    "it-pipe": "^2.0.0"
+    "it-pipe": "^2.0.0",
+    "uint8arraylist": "^2.0.0"
   },
   "repository": {
     "type": "git",

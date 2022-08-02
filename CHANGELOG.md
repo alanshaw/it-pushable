@@ -1,3 +1,10 @@
+## [3.1.0](https://github.com/alanshaw/it-pushable/compare/v3.0.0...v3.1.0) (2022-08-02)
+
+
+### Features
+
+* support Uint8ArrayLists in the same way as Uint8Arrays ([#30](https://github.com/alanshaw/it-pushable/issues/30)) ([7bae368](https://github.com/alanshaw/it-pushable/commit/7bae3688b1363954539b56de79c3a81ff53df59f))
+
 ## [3.0.0](https://github.com/alanshaw/it-pushable/compare/v2.0.2...v3.0.0) (2022-06-10)
 
 

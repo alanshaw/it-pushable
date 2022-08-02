@@ -57,41 +57,32 @@ export interface FIFOOptions {
    * When the queue reaches this size, it will be split into head/tail parts
    */
   splitLimit?: number
-
-  /**
-   * If true, `size` will be the number of items in the queue. If false, all
-   * values will be interpreted as Uint8Arrays and `size` will be the total
-   * number of bytes in the queue.
-   */
-  objectMode?: boolean
 }
 
-export class FIFO<T> {
+export class FIFO<T extends any | { byteLength: number }> {
   public size: number
   private readonly hwm: number
   private head: FixedFIFO<T>
   private tail: FixedFIFO<T>
-  private readonly objectMode: boolean
 
   constructor (options: FIFOOptions = {}) {
     this.hwm = options.splitLimit ?? 16
     this.head = new FixedFIFO<T>(this.hwm)
     this.tail = this.head
     this.size = 0
-    this.objectMode = Boolean(options.objectMode)
+  }
+
+  calculateSize (obj: any): number {
+    if (obj.byteLength != null) {
+      return obj.byteLength
+    }
+
+    return 1
   }
 
   push (val: Next<T>) {
     if (val?.value != null) {
-      if (this.objectMode) {
-        if (val.value != null) {
-          this.size++
-        }
-      } else if (val.value instanceof Uint8Array) {
-        this.size += val.value.byteLength
-      } else {
-        throw new Error('objectMode was false but tried to push non-Uint8Array value')
-      }
+      this.size += this.calculateSize(val.value)
     }
 
     if (!this.head.push(val)) {
@@ -112,13 +103,7 @@ export class FIFO<T> {
     }
 
     if (val?.value != null) {
-      if (this.objectMode) {
-        this.size--
-      } else if (val.value instanceof Uint8Array) {
-        this.size -= val.value.byteLength
-      } else {
-        throw new Error('objectMode was false but tried to shift non-Uint8Array value')
-      }
+      this.size -= this.calculateSize(val.value)
     }
 
     return val

@@ -2,6 +2,7 @@ import { expect } from 'aegir/chai'
 import { pipe } from 'it-pipe'
 import { pushable, pushableV } from '../src/index.js'
 import all from 'it-all'
+import { Uint8ArrayList } from 'uint8arraylist'
 
 describe('it-pushable', () => {
   it('should push input slowly', async () => {
@@ -359,7 +360,43 @@ describe('it-pushable', () => {
     expect(source).to.have.property('readableLength', 0)
   })
 
-  it('should throw if passed an object when objectMode is false', async () => {
+  it('should support readableLength for Uint8ArrayLists', async () => {
+    const source = pushable<Uint8ArrayList>()
+
+    expect(source).to.have.property('readableLength', 0)
+
+    await source.push(new Uint8ArrayList(Uint8Array.from([1, 2])))
+    expect(source).to.have.property('readableLength', 2)
+
+    await source.push(new Uint8ArrayList(Uint8Array.from([3, 4, 5])))
+    expect(source).to.have.property('readableLength', 5)
+
+    await source.next()
+    expect(source).to.have.property('readableLength', 3)
+
+    await source.next()
+    expect(source).to.have.property('readableLength', 0)
+  })
+
+  it('should support readableLength for mixed Uint8ArrayLists and Uint8Arrays', async () => {
+    const source = pushable<Uint8ArrayList | Uint8Array>()
+
+    expect(source).to.have.property('readableLength', 0)
+
+    await source.push(new Uint8ArrayList(Uint8Array.from([1, 2])))
+    expect(source).to.have.property('readableLength', 2)
+
+    await source.push(Uint8Array.from([3, 4, 5]))
+    expect(source).to.have.property('readableLength', 5)
+
+    await source.next()
+    expect(source).to.have.property('readableLength', 3)
+
+    await source.next()
+    expect(source).to.have.property('readableLength', 0)
+  })
+
+  it('should throw if passed an object when objectMode is not true', async () => {
     const source = pushable()
 
     // @ts-expect-error incorrect argument type

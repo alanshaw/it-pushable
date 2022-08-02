@@ -72,8 +72,8 @@ export class FIFO<T> {
     this.size = 0
   }
 
-  calculateSize (obj: any): number {
-    if (obj.byteLength != null) {
+  calculateSize (obj: T | { byteLength: number }): number {
+    if (obj != null && 'byteLength' in obj && obj.byteLength != null) {
       return obj.byteLength
     }
 

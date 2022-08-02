@@ -59,7 +59,7 @@ export interface FIFOOptions {
   splitLimit?: number
 }
 
-export class FIFO<T extends any | { byteLength: number }> {
+export class FIFO<T> {
   public size: number
   private readonly hwm: number
   private head: FixedFIFO<T>

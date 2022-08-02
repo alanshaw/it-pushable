@@ -153,7 +153,7 @@ function _pushable<PushType, ValueType, ReturnType> (getNext: getNext<PushType, 
     }
 
     // @ts-expect-error `byteLength` is not declared on PushType
-    if (options?.objectMode !== true && value.byteLength == null) {
+    if (options?.objectMode !== true && value?.byteLength == null) {
       throw new Error('objectMode was not true but tried to push non-Uint8Array value')
     }
 

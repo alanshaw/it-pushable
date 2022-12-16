@@ -1,15 +1,32 @@
-# it-pushable
+# it-pushable <!-- omit in toc -->
 
-[![Build Status](https://github.com/alanshaw/it-pushable/actions/workflows/js-test-and-release.yml/badge.svg?branch=master)](https://github.com/alanshaw/it-pushable/actions/workflows/js-test-and-release.yml)
-[![Dependencies Status](https://david-dm.org/alanshaw/it-pushable/status.svg)](https://david-dm.org/alanshaw/it-pushable)
-[![JavaScript Style Guide](https://img.shields.io/badge/code_style-standard-brightgreen.svg)](https://standardjs.com)
+[![codecov](https://img.shields.io/codecov/c/github/alanshaw/it-pushable.svg?style=flat-square)](https://codecov.io/gh/alanshaw/it-pushable)
+[![CI](https://img.shields.io/github/actions/workflow/status/alanshaw/it-pushable/js-test-and-release.yml?branch=master\&style=flat-square)](https://github.com/alanshaw/it-pushable/actions/workflows/js-test-and-release.yml?query=branch%3Amaster)
 
 > An iterable that you can push values into
 
+## Table of contents <!-- omit in toc -->
+
+- [Install](#install)
+  - [Browser `<script>` tag](#browser-script-tag)
+- [Usage](#usage)
+- [Related](#related)
+- [API Docs](#api-docs)
+- [License](#license)
+- [Contribution](#contribution)
+
 ## Install
 
-```sh
-npm install it-pushable
+```console
+$ npm i it-pushable
+```
+
+### Browser `<script>` tag
+
+Loading this module through a script tag will make it's exports available as `ItPushable` in the global namespace.
+
+```html
+<script src="https://unpkg.com/it-pushable/dist/index.min.js"></script>
 ```
 
 ## Usage
@@ -56,33 +73,21 @@ Output:
 */
 ```
 
-## API
-
-### `pushable([options])`
-
-Create a new async iterable. The values yielded from calls to `.next()` or when used in a `for await of` loop are "pushed" into the iterable. Returns an async iterable object with the following additional methods:
-
-* `.push(value)` - push a value into the iterable. Values are yielded from the iterable in the order they are pushed. Values not yet consumed from the iterable are buffered
-* `.end([err])` - end the iterable after all values in the buffer (if any) have been yielded. If an error is passed the buffer is cleared immediately and the next iteration will throw the passed error
-* `.readableLength` - a number that represents the size of the queue. if `objectMode` is true, this is the number of objects in the queue, if false it's the total number of bytes in the queue
-
-`options` is an _optional_ parameter, an object with the following properties:
-
-* `onEnd` - a function called after _all_ values have been yielded from the iterator (including buffered values). In the case when the iterator is ended with an error it will be passed the error as a parameter.
-* `objectMode` - a boolean value that means non-`Uint8Array`s will be passed to `.push`, default: `false`
-
-### `pushableV([options])`
-
-Similar to `pushable`, except it yields multiple buffered chunks at a time. All values yielded from the iterable will be arrays.
-
 ## Related
 
-* [`it-pipe`](https://www.npmjs.com/package/it-pipe) Utility to "pipe" async iterables together
+- [`it-pipe`](https://www.npmjs.com/package/it-pipe) Utility to "pipe" async iterables together
 
-## Contribute
+## API Docs
 
-Feel free to dive in! [Open an issue](https://github.com/alanshaw/it-pushable/issues/new) or submit PRs.
+- <https://alanshaw.github.io/it-pushable>
 
 ## License
 
-[MIT](LICENSE) © Alan Shaw
+Licensed under either of
+
+- Apache 2.0, ([LICENSE-APACHE](LICENSE-APACHE) / <http://www.apache.org/licenses/LICENSE-2.0>)
+- MIT ([LICENSE-MIT](LICENSE-MIT) / <http://opensource.org/licenses/MIT>)
+
+## Contribution
+
+Unless you explicitly state otherwise, any contribution intentionally submitted for inclusion in the work by you, as defined in the Apache-2.0 license, shall be dual licensed as above, without any additional terms or conditions.

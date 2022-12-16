@@ -1,3 +1,10 @@
+## [3.1.2](https://github.com/alanshaw/it-pushable/compare/v3.1.1...v3.1.2) (2022-12-16)
+
+
+### Documentation
+
+* publish api docs ([#39](https://github.com/alanshaw/it-pushable/issues/39)) ([95adf08](https://github.com/alanshaw/it-pushable/commit/95adf08e789b8ca4617163026e091835aba39706))
+
 ## [3.1.1](https://github.com/alanshaw/it-pushable/compare/v3.1.0...v3.1.1) (2022-12-16)
 
 

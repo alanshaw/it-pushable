@@ -1,3 +1,10 @@
+## [3.1.1](https://github.com/alanshaw/it-pushable/compare/v3.1.0...v3.1.1) (2022-12-16)
+
+
+### Trivial Changes
+
+* **deps-dev:** bump it-all from 1.0.6 to 2.0.0 ([#34](https://github.com/alanshaw/it-pushable/issues/34)) ([1b50e5e](https://github.com/alanshaw/it-pushable/commit/1b50e5ed9211711530103db140cd401ecb2339fd))
+
 ## [3.1.0](https://github.com/alanshaw/it-pushable/compare/v3.0.0...v3.1.0) (2022-08-02)
 
 

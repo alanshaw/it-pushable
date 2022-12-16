@@ -1,17 +1,38 @@
 {
   "name": "it-pushable",
   "version": "3.1.1",
-  "description": "Pushable iterable",
+  "description": "An iterable that you can push values into",
+  "author": "Alan Shaw",
+  "license": "Apache-2.0 OR MIT",
+  "homepage": "https://github.com/alanshaw/it-pushable#readme",
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/alanshaw/it-pushable.git"
+  },
+  "bugs": {
+    "url": "https://github.com/alanshaw/it-pushable/issues"
+  },
+  "keywords": [
+    "iterable",
+    "iterator",
+    "push",
+    "pushable"
+  ],
+  "engines": {
+    "node": ">=16.0.0",
+    "npm": ">=7.0.0"
+  },
   "type": "module",
   "types": "./dist/src/index.d.ts",
   "files": [
     "src",
-    "dist/src",
+    "dist",
     "!dist/test",
     "!**/*.tsbuildinfo"
   ],
   "exports": {
     ".": {
+      "types": "./dist/src/index.d.ts",
       "import": "./dist/src/index.js"
     }
   },
@@ -48,15 +69,15 @@
               "release": "patch"
             },
             {
-              "type": "chore",
-              "release": "patch"
-            },
-            {
               "type": "docs",
               "release": "patch"
             },
             {
               "type": "test",
+              "release": "patch"
+            },
+            {
+              "type": "deps",
               "release": "patch"
             },
             {
@@ -86,7 +107,11 @@
               },
               {
                 "type": "docs",
-                "section": "Trivial Changes"
+                "section": "Documentation"
+              },
+              {
+                "type": "deps",
+                "section": "Dependencies"
               },
               {
                 "type": "test",
@@ -114,29 +139,14 @@
     "test:firefox-webworker": "aegir test -t webworker -- --browser firefox",
     "test:node": "aegir test -t node --cov",
     "test:electron-main": "aegir test -t electron-main",
-    "release": "aegir release"
+    "release": "aegir release",
+    "docs": "aegir docs"
   },
-  "keywords": [
-    "push",
-    "iterable",
-    "iterator",
-    "pushable"
-  ],
-  "author": "Alan Shaw",
-  "license": "MIT",
   "devDependencies": {
     "@types/fast-fifo": "^1.0.0",
-    "aegir": "^37.0.17",
+    "aegir": "^37.7.8",
     "it-all": "^2.0.0",
     "it-pipe": "^2.0.0",
     "uint8arraylist": "^2.0.0"
-  },
-  "repository": {
-    "type": "git",
-    "url": "git+https://github.com/alanshaw/it-pushable.git"
-  },
-  "bugs": {
-    "url": "https://github.com/alanshaw/it-pushable/issues"
-  },
-  "homepage": "https://github.com/alanshaw/it-pushable#readme"
+  }
 }

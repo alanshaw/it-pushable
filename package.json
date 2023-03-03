@@ -144,7 +144,7 @@
   },
   "devDependencies": {
     "@types/fast-fifo": "^1.0.0",
-    "aegir": "^37.7.8",
+    "aegir": "^38.1.7",
     "it-all": "^2.0.0",
     "it-pipe": "^2.0.0",
     "uint8arraylist": "^2.0.0"

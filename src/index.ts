@@ -96,7 +96,7 @@ export interface Options {
   onEnd?: (err?: Error) => void
 }
 
-type NextResult<T> = { done: false, value: T} | { done: true }
+type NextResult<T> = { done: false, value: T } | { done: true }
 
 interface getNext<T, V = T> { (buffer: FIFO<T>): NextResult<V> }
 
@@ -207,7 +207,7 @@ function _pushable<PushType, ValueType, ReturnType> (getNext: getNext<PushType, 
     })
   }
 
-  const bufferNext = (next: Next<PushType>) => {
+  const bufferNext = (next: Next<PushType>): ReturnType => {
     if (onNext != null) {
       return onNext(next)
     }
@@ -216,7 +216,7 @@ function _pushable<PushType, ValueType, ReturnType> (getNext: getNext<PushType, 
     return pushable
   }
 
-  const bufferError = (err: Error) => {
+  const bufferError = (err: Error): ReturnType => {
     buffer = new FIFO()
 
     if (onNext != null) {
@@ -227,7 +227,7 @@ function _pushable<PushType, ValueType, ReturnType> (getNext: getNext<PushType, 
     return pushable
   }
 
-  const push = (value: PushType) => {
+  const push = (value: PushType): ReturnType => {
     if (ended) {
       return pushable
     }
@@ -239,19 +239,19 @@ function _pushable<PushType, ValueType, ReturnType> (getNext: getNext<PushType, 
 
     return bufferNext({ done: false, value })
   }
-  const end = (err?: Error) => {
+  const end = (err?: Error): ReturnType => {
     if (ended) return pushable
     ended = true
 
     return (err != null) ? bufferError(err) : bufferNext({ done: true })
   }
-  const _return = () => {
+  const _return = (): NextResult<ValueType> => {
     buffer = new FIFO()
     end()
 
     return { done: true }
   }
-  const _throw = (err: Error) => {
+  const _throw = (err: Error): NextResult<ValueType> => {
     end(err)
 
     return { done: true }

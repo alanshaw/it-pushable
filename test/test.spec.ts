@@ -130,7 +130,7 @@ describe('it-pushable', () => {
   it('should call onEnd', (done) => {
     const source = pushable<number>({
       objectMode: true,
-      onEnd: () => done()
+      onEnd: () => { done() }
     })
     const input = [1, 2, 3]
     for (let i = 0; i < input.length; i++) {
@@ -143,7 +143,7 @@ describe('it-pushable', () => {
   it('should call onEnd if passed in options object', (done) => {
     const source = pushable<number>({
       objectMode: true,
-      onEnd: () => done()
+      onEnd: () => { done() }
     })
     const input = [1, 2, 3]
     for (let i = 0; i < input.length; i++) {
@@ -155,7 +155,7 @@ describe('it-pushable', () => {
 
   it('should call onEnd even if not piped', (done) => {
     const source = pushable({
-      onEnd: () => done()
+      onEnd: () => { done() }
     })
     source.end()
   })
@@ -229,7 +229,7 @@ describe('it-pushable', () => {
           output.push(value)
         }
       }
-      source.return()
+      await source.return()
     })()
   })
 
@@ -242,7 +242,7 @@ describe('it-pushable', () => {
       onEnd: () => {
         count++
         expect(count).to.equal(1)
-        setTimeout(() => done(), 50)
+        setTimeout(() => { done() }, 50)
       }
     })
 
@@ -250,7 +250,7 @@ describe('it-pushable', () => {
 
     void (async () => {
       await source.next()
-      source.return()
+      await source.return()
       await source.next()
     })()
   })
@@ -282,7 +282,7 @@ describe('it-pushable', () => {
           output.push(value)
         }
       }
-      source.throw(new Error('boom'))
+      await source.throw(new Error('boom'))
     })()
   })
 
@@ -329,10 +329,10 @@ describe('it-pushable', () => {
 
     expect(source).to.have.property('readableLength', 0)
 
-    await source.push(1)
+    source.push(1)
     expect(source).to.have.property('readableLength', 1)
 
-    await source.push(1)
+    source.push(1)
     expect(source).to.have.property('readableLength', 2)
 
     await source.next()
@@ -347,10 +347,10 @@ describe('it-pushable', () => {
 
     expect(source).to.have.property('readableLength', 0)
 
-    await source.push(Uint8Array.from([1, 2]))
+    source.push(Uint8Array.from([1, 2]))
     expect(source).to.have.property('readableLength', 2)
 
-    await source.push(Uint8Array.from([3, 4, 5]))
+    source.push(Uint8Array.from([3, 4, 5]))
     expect(source).to.have.property('readableLength', 5)
 
     await source.next()
@@ -365,10 +365,10 @@ describe('it-pushable', () => {
 
     expect(source).to.have.property('readableLength', 0)
 
-    await source.push(new Uint8ArrayList(Uint8Array.from([1, 2])))
+    source.push(new Uint8ArrayList(Uint8Array.from([1, 2])))
     expect(source).to.have.property('readableLength', 2)
 
-    await source.push(new Uint8ArrayList(Uint8Array.from([3, 4, 5])))
+    source.push(new Uint8ArrayList(Uint8Array.from([3, 4, 5])))
     expect(source).to.have.property('readableLength', 5)
 
     await source.next()
@@ -383,10 +383,10 @@ describe('it-pushable', () => {
 
     expect(source).to.have.property('readableLength', 0)
 
-    await source.push(new Uint8ArrayList(Uint8Array.from([1, 2])))
+    source.push(new Uint8ArrayList(Uint8Array.from([1, 2])))
     expect(source).to.have.property('readableLength', 2)
 
-    await source.push(Uint8Array.from([3, 4, 5]))
+    source.push(Uint8Array.from([3, 4, 5]))
     expect(source).to.have.property('readableLength', 5)
 
     await source.next()

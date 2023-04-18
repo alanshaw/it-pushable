@@ -25,7 +25,7 @@ class FixedFIFO<T> {
     this.next = null
   }
 
-  push (data: Next<T>) {
+  push (data: Next<T>): boolean {
     if (this.buffer[this.top] !== undefined) {
       return false
     }
@@ -36,7 +36,7 @@ class FixedFIFO<T> {
     return true
   }
 
-  shift () {
+  shift (): Next<T> | undefined {
     const last = this.buffer[this.btm]
 
     if (last === undefined) {
@@ -48,7 +48,7 @@ class FixedFIFO<T> {
     return last
   }
 
-  isEmpty () {
+  isEmpty (): boolean {
     return this.buffer[this.btm] === undefined
   }
 }
@@ -81,7 +81,7 @@ export class FIFO<T> {
     return 1
   }
 
-  push (val: Next<T>) {
+  push (val: Next<T>): void {
     if (val?.value != null) {
       this.size += this.calculateSize(val.value)
     }
@@ -93,7 +93,7 @@ export class FIFO<T> {
     }
   }
 
-  shift () {
+  shift (): Next<T> | undefined {
     let val = this.tail.shift()
 
     if (val === undefined && (this.tail.next != null)) {
@@ -110,7 +110,7 @@ export class FIFO<T> {
     return val
   }
 
-  isEmpty () {
+  isEmpty (): boolean {
     return this.head.isEmpty()
   }
 }

@@ -1,3 +1,10 @@
+## [3.1.3](https://github.com/alanshaw/it-pushable/compare/v3.1.2...v3.1.3) (2023-04-18)
+
+
+### Bug Fixes
+
+* extend async generator ([#56](https://github.com/alanshaw/it-pushable/issues/56)) ([3cf8f5c](https://github.com/alanshaw/it-pushable/commit/3cf8f5c5dd6d7aac8e93f7bfe003b99caf9267ca))
+
 ## [3.1.2](https://github.com/alanshaw/it-pushable/compare/v3.1.1...v3.1.2) (2022-12-16)
 
 

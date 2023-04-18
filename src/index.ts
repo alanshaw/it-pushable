@@ -47,13 +47,7 @@
  * ```
  */
 
-import { FIFO } from './fifo.js'
-
-export interface Next<T> {
-  done?: boolean
-  error?: Error
-  value?: T
-}
+import { FIFO, Next } from './fifo.js'
 
 interface BasePushable<T> {
   /**
@@ -68,9 +62,6 @@ interface BasePushable<T> {
    * they are pushed. Values not yet consumed from the iterable are buffered.
    */
   push: (value: T) => this
-  next: () => Promise<Next<T>>
-  return: () => { done: boolean }
-  throw: (err: Error) => { done: boolean }
 
   /**
    * This property contains the number of bytes (or objects) in the queue ready to be read.
@@ -84,12 +75,12 @@ interface BasePushable<T> {
 /**
  * An iterable that you can push values into.
  */
-export interface Pushable<T> extends AsyncIterable<T>, BasePushable<T> {}
+export interface Pushable<T, R = void, N = unknown> extends AsyncGenerator<T, R, N>, BasePushable<T> {}
 
 /**
  * Similar to `pushable`, except it yields multiple buffered chunks at a time. All values yielded from the iterable will be arrays.
  */
-export interface PushableV<T> extends AsyncIterable<T[]>, BasePushable<T> {}
+export interface PushableV<T, R = void, N = unknown> extends AsyncGenerator<T[], R, N>, BasePushable<T> {}
 
 export interface Options {
   /**

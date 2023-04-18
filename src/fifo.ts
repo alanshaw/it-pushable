@@ -1,6 +1,10 @@
 // ported from https://www.npmjs.com/package/fast-fifo
 
-import type { Next } from './index.js'
+export interface Next<T> {
+  done?: boolean
+  error?: Error
+  value?: T
+}
 
 class FixedFIFO<T> {
   public buffer: Array<Next<T> | undefined>

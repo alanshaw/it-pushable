@@ -48,6 +48,7 @@
  */
 
 import { FIFO, Next } from './fifo.js'
+import defered from 'p-defer'
 
 interface BasePushable<T> {
   /**
@@ -70,6 +71,12 @@ interface BasePushable<T> {
    * total number of bytes in the queue.
    */
   readableLength: number
+
+  /**
+   * A promise that resolves when the underlying queue becomes empty (e.g.
+   * this.readableLength === 0).
+   */
+  drain: Promise<void>
 }
 
 /**
@@ -181,10 +188,23 @@ function _pushable<PushType, ValueType, ReturnType> (getNext: getNext<PushType, 
   let pushable: any
   let onNext: ((next: Next<PushType>) => ReturnType) | null
   let ended: boolean
+  let drain = defered()
 
   const waitNext = async (): Promise<NextResult<ValueType>> => {
+    let value: NextResult<ValueType> | undefined
+
     if (!buffer.isEmpty()) {
-      return getNext(buffer)
+      value = getNext(buffer)
+    }
+
+    if (buffer.isEmpty()) {
+      drain.resolve()
+      drain = defered()
+      pushable.drain = drain.promise
+    }
+
+    if (value != null) {
+      return value
     }
 
     if (ended) {
@@ -266,7 +286,8 @@ function _pushable<PushType, ValueType, ReturnType> (getNext: getNext<PushType, 
     end,
     get readableLength () {
       return buffer.size
-    }
+    },
+    drain: drain.promise
   }
 
   if (onEnd == null) {
@@ -313,7 +334,8 @@ function _pushable<PushType, ValueType, ReturnType> (getNext: getNext<PushType, 
     },
     get readableLength () {
       return _pushable.readableLength
-    }
+    },
+    drain: drain.promise
   }
 
   return pushable

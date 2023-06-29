@@ -402,4 +402,61 @@ describe('it-pushable', () => {
     // @ts-expect-error incorrect argument type
     expect(() => source.push('hello')).to.throw().with.property('message').that.includes('tried to push non-Uint8Array value')
   })
+
+  it('should settle the empty promise when the pushable becomes empty', async () => {
+    const source = pushable<number>({
+      objectMode: true
+    })
+
+    let resolved = false
+
+    const p = source.drain.then(() => {
+      resolved = true
+    })
+
+    source.push(1)
+    expect(resolved).to.be.false()
+
+    source.push(2)
+    expect(resolved).to.be.false()
+
+    void source.next()
+    expect(resolved).to.be.false()
+
+    void source.next()
+    expect(resolved).to.be.false()
+
+    void source.next()
+
+    await p
+
+    expect(resolved).to.be.true()
+  })
+
+  it('should settle the empty promise when the pushableV becomes empty', async () => {
+    const source = pushableV<number>({
+      objectMode: true
+    })
+
+    let resolved = false
+
+    const p = source.drain.then(() => {
+      resolved = true
+    })
+
+    source.push(1)
+    expect(resolved).to.be.false()
+
+    source.push(2)
+    expect(resolved).to.be.false()
+
+    void source.next()
+    expect(resolved).to.be.false()
+
+    void source.next()
+
+    await p
+
+    expect(resolved).to.be.true()
+  })
 })

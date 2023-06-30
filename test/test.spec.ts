@@ -1,8 +1,8 @@
 import { expect } from 'aegir/chai'
-import { pipe } from 'it-pipe'
-import { pushable, pushableV } from '../src/index.js'
 import all from 'it-all'
+import { pipe } from 'it-pipe'
 import { Uint8ArrayList } from 'uint8arraylist'
+import { pushable, pushableV } from '../src/index.js'
 
 describe('it-pushable', () => {
   it('should push input slowly', async () => {
@@ -14,7 +14,7 @@ describe('it-pushable', () => {
       setTimeout(() => source.push(input[i]), i * 10)
     }
     setTimeout(() => source.end(), input.length * 10)
-    const output = await pipe(source, async (source) => await all(source))
+    const output = await pipe(source, async (source) => all(source))
     expect(output).to.deep.equal(input)
   })
 
@@ -25,7 +25,7 @@ describe('it-pushable', () => {
     const input = [1, 2, 3]
     input.forEach(v => source.push(v))
     setTimeout(() => source.end())
-    const output = await pipe(source, async (source) => await all(source))
+    const output = await pipe(source, async (source) => all(source))
     expect(output).to.deep.equal(input)
   })
 
@@ -36,7 +36,7 @@ describe('it-pushable', () => {
     const input = [1, 2, 3, undefined, null, 0, 4]
     input.forEach(v => source.push(v))
     setTimeout(() => source.end())
-    const output = await pipe(source, async (source) => await all(source))
+    const output = await pipe(source, async (source) => all(source))
     expect(output).to.deep.equal(input)
   })
 
@@ -55,9 +55,9 @@ describe('it-pushable', () => {
       }, i * 10)
     }
     setTimeout(() => source.end(), input.length * 10)
-    const output = await pipe(source, async (source) => await all(source))
-    // @ts-expect-error
-    expect(output).to.deep.equal([].concat.apply([], input))
+    const output = await pipe(source, async (source) => all(source))
+
+    expect(output).to.deep.equal(input.flat())
   })
 
   it('should allow end before start', async () => {
@@ -67,7 +67,7 @@ describe('it-pushable', () => {
     const input = [1, 2, 3]
     input.forEach(v => source.push(v))
     source.end()
-    const output = await pipe(source, async (source) => await all(source))
+    const output = await pipe(source, async (source) => all(source))
     expect(output).to.deep.equal(input)
   })
 
@@ -79,7 +79,7 @@ describe('it-pushable', () => {
     input.forEach(v => source.push(v))
     source.end(new Error('boom'))
 
-    await expect(pipe(source, async (source) => await all(source)))
+    await expect(pipe(source, async (source) => all(source)))
       .to.eventually.be.rejected.with.property('message', 'boom')
   })
 
@@ -99,7 +99,7 @@ describe('it-pushable', () => {
     }
     setTimeout(() => source.end(), input.length * 10)
 
-    await expect(pipe(source, async (source) => await all(source)))
+    await expect(pipe(source, async (source) => all(source)))
       .to.eventually.be.rejected.with.property('message', 'boom')
   })
 
@@ -107,7 +107,7 @@ describe('it-pushable', () => {
     const source = pushable()
     const input: any[] = []
     source.end()
-    const output = await pipe(source, async (source) => await all(source))
+    const output = await pipe(source, async (source) => all(source))
     expect(output).to.deep.equal(input)
   })
 
@@ -137,7 +137,7 @@ describe('it-pushable', () => {
       setTimeout(() => source.push(input[i]), i * 10)
     }
     setTimeout(() => source.end(), input.length * 10)
-    void pipe(source, async (source) => await all(source))
+    void pipe(source, async (source) => all(source))
   })
 
   it('should call onEnd if passed in options object', (done) => {
@@ -150,7 +150,7 @@ describe('it-pushable', () => {
       setTimeout(() => source.push(input[i]), i * 10)
     }
     setTimeout(() => source.end(), input.length * 10)
-    void pipe(source, async (source) => await all(source))
+    void pipe(source, async (source) => all(source))
   })
 
   it('should call onEnd even if not piped', (done) => {
@@ -168,7 +168,7 @@ describe('it-pushable', () => {
       }
     })
     setTimeout(() => source.end(new Error('boom')), 10)
-    void pipe(source, async (source) => await all(source)).catch(() => {})
+    void pipe(source, async (source) => all(source)).catch(() => {})
   })
 
   it('should call onEnd on return before end', (done) => {
@@ -229,7 +229,7 @@ describe('it-pushable', () => {
           output.push(value)
         }
       }
-      source.return()
+      await source.return()
     })()
   })
 
@@ -250,7 +250,7 @@ describe('it-pushable', () => {
 
     void (async () => {
       await source.next()
-      source.return()
+      await source.return()
       await source.next()
     })()
   })
@@ -282,7 +282,7 @@ describe('it-pushable', () => {
           output.push(value)
         }
       }
-      source.throw(new Error('boom'))
+      await source.throw(new Error('boom'))
     })()
   })
 
@@ -293,7 +293,7 @@ describe('it-pushable', () => {
     const input = [1, 2, 3]
     input.forEach(v => source.push(v))
     setTimeout(() => source.end())
-    const output = await pipe(source, async (source) => await all(source))
+    const output = await pipe(source, async (source) => all(source))
     expect(output[0]).to.deep.equal(input)
   })
 
@@ -306,7 +306,7 @@ describe('it-pushable', () => {
       input.forEach(v => source.push(v))
       setTimeout(() => source.end())
     })
-    const output = await pipe(source, async (source) => await all(source))
+    const output = await pipe(source, async (source) => all(source))
     output.forEach(v => expect(Array.isArray(v)).to.be.true())
   })
 
@@ -318,7 +318,7 @@ describe('it-pushable', () => {
     input.forEach(v => source.push(v))
     source.end(new Error('boom'))
 
-    await expect(pipe(source, async (source) => await all(source)))
+    await expect(pipe(source, async (source) => all(source)))
       .to.eventually.be.rejected.with.property('message', 'boom')
   })
 

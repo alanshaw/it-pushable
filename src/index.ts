@@ -47,8 +47,8 @@
  * ```
  */
 
-import { FIFO, Next } from './fifo.js'
 import deferred from 'p-defer'
+import { FIFO, type Next } from './fifo.js'
 
 interface BasePushable<T> {
   /**
@@ -103,7 +103,9 @@ export interface Options {
   onEnd?: (err?: Error) => void
 }
 
-type NextResult<T> = { done: false, value: T } | { done: true }
+export interface DoneResult { done: true }
+export interface ValueResult<T> { done: false, value: T }
+export type NextResult<T> = ValueResult<T> | DoneResult
 
 interface getNext<T, V = T> { (buffer: FIFO<T>): NextResult<V> }
 
@@ -136,7 +138,7 @@ export function pushable<T> (options: Options = {}): Pushable<T> {
 
     return {
       done: next.done === true,
-      // @ts-expect-error
+      // @ts-expect-error if done is false, value will be present
       value: next.value
     }
   }
@@ -163,7 +165,7 @@ export function pushableV<T> (options: Options = {}): PushableV<T> {
       }
 
       if (next.done === false) {
-        // @ts-expect-error
+        // @ts-expect-error if done is false value should be pushed
         values.push(next.value)
       }
     }
@@ -217,7 +219,7 @@ function _pushable<PushType, ValueType, ReturnType> (getNext: getNext<PushType, 
       }
     }
 
-    return await new Promise((resolve, reject) => {
+    return new Promise((resolve, reject) => {
       onNext = (next: Next<PushType>) => {
         onNext = null
         buffer.push(next)
@@ -281,13 +283,13 @@ function _pushable<PushType, ValueType, ReturnType> (getNext: getNext<PushType, 
 
     return (err != null) ? bufferError(err) : bufferNext({ done: true })
   }
-  const _return = (): NextResult<ValueType> => {
+  const _return = (): DoneResult => {
     buffer = new FIFO()
     end()
 
     return { done: true }
   }
-  const _throw = (err: Error): NextResult<ValueType> => {
+  const _throw = (err: Error): DoneResult => {
     end(err)
 
     return { done: true }
@@ -300,7 +302,7 @@ function _pushable<PushType, ValueType, ReturnType> (getNext: getNext<PushType, 
     throw: _throw,
     push,
     end,
-    get readableLength () {
+    get readableLength (): number {
       return buffer.size
     },
     drain: drain.promise

@@ -1,3 +1,10 @@
+## [3.1.4](https://github.com/alanshaw/it-pushable/compare/v3.1.3...v3.1.4) (2023-06-30)
+
+
+### Dependencies
+
+* **dev:** bump aegir from 37.12.1 to 39.0.13 ([#52](https://github.com/alanshaw/it-pushable/issues/52)) ([9399579](https://github.com/alanshaw/it-pushable/commit/939957932ed19a6558748e06ce50822b8d062b9b))
+
 ## [3.1.3](https://github.com/alanshaw/it-pushable/compare/v3.1.2...v3.1.3) (2023-04-18)
 
 

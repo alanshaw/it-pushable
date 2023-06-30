@@ -48,7 +48,7 @@
  */
 
 import { FIFO, Next } from './fifo.js'
-import defered from 'p-defer'
+import deferred from 'p-defer'
 
 interface BasePushable<T> {
   /**
@@ -188,27 +188,33 @@ function _pushable<PushType, ValueType, ReturnType> (getNext: getNext<PushType, 
   let pushable: any
   let onNext: ((next: Next<PushType>) => ReturnType) | null
   let ended: boolean
-  let drain = defered()
+  let drain = deferred()
 
   const waitNext = async (): Promise<NextResult<ValueType>> => {
-    let value: NextResult<ValueType> | undefined
+    try {
+      let value: NextResult<ValueType> | undefined
 
-    if (!buffer.isEmpty()) {
-      value = getNext(buffer)
-    }
+      if (!buffer.isEmpty()) {
+        value = getNext(buffer)
+      }
 
-    if (buffer.isEmpty()) {
-      drain.resolve()
-      drain = defered()
-      pushable.drain = drain.promise
-    }
+      if (value != null) {
+        return value
+      }
 
-    if (value != null) {
-      return value
-    }
-
-    if (ended) {
-      return { done: true }
+      if (ended) {
+        return { done: true }
+      }
+    } finally {
+      if (buffer.isEmpty()) {
+        // settle promise in the microtask queue to give consumers a chance to
+        // await after calling .push
+        Promise.resolve().then(() => {
+          drain.resolve()
+          drain = deferred()
+          pushable.drain = drain.promise
+        })
+      }
     }
 
     return await new Promise((resolve, reject) => {
@@ -220,6 +226,16 @@ function _pushable<PushType, ValueType, ReturnType> (getNext: getNext<PushType, 
           resolve(getNext(buffer))
         } catch (err) {
           reject(err)
+        } finally {
+          if (buffer.isEmpty()) {
+            // settle promise in the microtask queue to give consumers a chance to
+            // await after calling .push
+            Promise.resolve().then(() => {
+              drain.resolve()
+              drain = deferred()
+              pushable.drain = drain.promise
+            })
+          }
         }
 
         return pushable

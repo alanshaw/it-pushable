@@ -211,7 +211,7 @@ function _pushable<PushType, ValueType, ReturnType> (getNext: getNext<PushType, 
       if (buffer.isEmpty()) {
         // settle promise in the microtask queue to give consumers a chance to
         // await after calling .push
-        void Promise.resolve().then(() => {
+        queueMicrotask(() => {
           drain.resolve()
           drain = deferred()
           pushable.drain = drain.promise
@@ -232,7 +232,7 @@ function _pushable<PushType, ValueType, ReturnType> (getNext: getNext<PushType, 
           if (buffer.isEmpty()) {
             // settle promise in the microtask queue to give consumers a chance to
             // await after calling .push
-            void Promise.resolve().then(() => {
+            queueMicrotask(() => {
               drain.resolve()
               drain = deferred()
               pushable.drain = drain.promise

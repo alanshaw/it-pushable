@@ -1,3 +1,10 @@
+## [3.2.0](https://github.com/alanshaw/it-pushable/compare/v3.1.4...v3.2.0) (2023-07-03)
+
+
+### Features
+
+* add onEmpty function that resolves when the queue is empty ([#58](https://github.com/alanshaw/it-pushable/issues/58)) ([2bed38a](https://github.com/alanshaw/it-pushable/commit/2bed38ad1e477efc30c1a800c4de51813c8319d0))
+
 ## [3.1.4](https://github.com/alanshaw/it-pushable/compare/v3.1.3...v3.1.4) (2023-06-30)
 
 

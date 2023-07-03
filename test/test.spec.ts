@@ -402,4 +402,78 @@ describe('it-pushable', () => {
     // @ts-expect-error incorrect argument type
     expect(() => source.push('hello')).to.throw().with.property('message').that.includes('tried to push non-Uint8Array value')
   })
+
+  it('should return from onEmpty when the queue is empty', async () => {
+    const source = pushableV<number>({
+      objectMode: true
+    })
+
+    await expect(source.onEmpty()).to.eventually.be.undefined()
+  })
+
+  it('should return from onEmpty when the pushable becomes empty', async () => {
+    const source = pushable<number>({
+      objectMode: true
+    })
+
+    source.push(1)
+
+    let resolved = false
+    const onEmptyPromise = source.onEmpty().then(() => {
+      resolved = true
+    })
+
+    expect(resolved).to.be.false()
+
+    source.push(2)
+    expect(resolved).to.be.false()
+
+    await source.next()
+    expect(resolved).to.be.false()
+
+    await source.next()
+    await onEmptyPromise
+    expect(resolved).to.be.true()
+  })
+
+  it('should return from onEmpty when the pushableV becomes empty', async () => {
+    const source = pushableV<number>({
+      objectMode: true
+    })
+
+    source.push(1)
+
+    let resolved = false
+
+    const onEmptyPromise = source.onEmpty().then(() => {
+      resolved = true
+    })
+
+    expect(resolved).to.be.false()
+
+    source.push(2)
+    expect(resolved).to.be.false()
+
+    await source.next()
+    await onEmptyPromise
+    expect(resolved).to.be.true()
+  })
+
+  it('should reject from onEmpty when the passed abort signal is aborted', async () => {
+    const source = pushable<number>({
+      objectMode: true
+    })
+
+    source.push(1)
+
+    const controller = new AbortController()
+    const p = source.onEmpty(controller.signal)
+
+    source.push(2)
+
+    controller.abort()
+
+    await expect(p).to.eventually.be.rejected
+      .with.property('code', 'ABORT_ERR')
+  })
 })

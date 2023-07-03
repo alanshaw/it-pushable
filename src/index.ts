@@ -47,7 +47,19 @@
  * ```
  */
 
+import deferred from 'p-defer'
 import { FIFO, type Next } from './fifo.js'
+
+export class AbortError extends Error {
+  type: string
+  code: string
+
+  constructor (message?: string, code?: string) {
+    super(message ?? 'The operation was aborted')
+    this.type = 'aborted'
+    this.code = code ?? 'ABORT_ERR'
+  }
+}
 
 interface BasePushable<T> {
   /**
@@ -62,6 +74,12 @@ interface BasePushable<T> {
    * they are pushed. Values not yet consumed from the iterable are buffered.
    */
   push: (value: T) => this
+
+  /**
+   * Returns a promise that resolves when the underlying queue becomes empty (e.g.
+   * this.readableLength === 0).
+   */
+  onEmpty: (signal?: AbortSignal) => Promise<void>
 
   /**
    * This property contains the number of bytes (or objects) in the queue ready to be read.
@@ -183,14 +201,32 @@ function _pushable<PushType, ValueType, ReturnType> (getNext: getNext<PushType, 
   let pushable: any
   let onNext: ((next: Next<PushType>) => ReturnType) | null
   let ended: boolean
+  let drain = deferred()
 
   const waitNext = async (): Promise<NextResult<ValueType>> => {
-    if (!buffer.isEmpty()) {
-      return getNext(buffer)
-    }
+    try {
+      let value: NextResult<ValueType> | undefined
 
-    if (ended) {
-      return { done: true }
+      if (!buffer.isEmpty()) {
+        value = getNext(buffer)
+      }
+
+      if (value != null) {
+        return value
+      }
+
+      if (ended) {
+        return { done: true }
+      }
+    } finally {
+      if (buffer.isEmpty()) {
+        // settle promise in the microtask queue to give consumers a chance to
+        // await after calling .push
+        queueMicrotask(() => {
+          drain.resolve()
+          drain = deferred()
+        })
+      }
     }
 
     return new Promise((resolve, reject) => {
@@ -202,6 +238,15 @@ function _pushable<PushType, ValueType, ReturnType> (getNext: getNext<PushType, 
           resolve(getNext(buffer))
         } catch (err) {
           reject(err)
+        } finally {
+          if (buffer.isEmpty()) {
+            // settle promise in the microtask queue to give consumers a chance to
+            // await after calling .push
+            queueMicrotask(() => {
+              drain.resolve()
+              drain = deferred()
+            })
+          }
         }
 
         return pushable
@@ -268,6 +313,36 @@ function _pushable<PushType, ValueType, ReturnType> (getNext: getNext<PushType, 
     end,
     get readableLength (): number {
       return buffer.size
+    },
+    onEmpty: async (signal?: AbortSignal) => {
+      signal?.throwIfAborted()
+
+      if (buffer.isEmpty()) {
+        return
+      }
+
+      let cancel: Promise<void> | undefined
+      let listener: () => void | undefined
+
+      if (signal != null) {
+        cancel = new Promise((resolve, reject) => {
+          listener = () => {
+            reject(new AbortError())
+          }
+
+          signal?.addEventListener('abort', listener)
+        })
+      }
+
+      await Promise.race([
+        drain.promise,
+        cancel
+      ])
+        .finally(() => {
+          if (listener != null && signal != null) {
+            signal.removeEventListener('abort', listener)
+          }
+        })
     }
   }
 

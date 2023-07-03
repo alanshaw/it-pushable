@@ -349,7 +349,7 @@ function _pushable<PushType, ValueType, ReturnType> (getNext: getNext<PushType, 
         ])
       } finally {
         if (listener != null && signal != null) {
-          signal.removeEventListener('abort', listener)
+          signal?.removeEventListener('abort', listener)
         }
       }
     }

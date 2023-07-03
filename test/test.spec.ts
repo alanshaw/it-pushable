@@ -467,7 +467,7 @@ describe('it-pushable', () => {
     source.push(1)
 
     const controller = new AbortController()
-    const p = source.onEmpty(controller.signal)
+    const p = source.onEmpty({ signal: controller.signal })
 
     source.push(2)
 

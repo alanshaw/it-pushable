@@ -322,7 +322,7 @@ function _pushable<PushType, ValueType, ReturnType> (getNext: getNext<PushType, 
       }
 
       let cancel: Promise<void> | undefined
-      let listener: () => void | undefined
+      let listener: (() => void) | undefined
 
       if (signal != null) {
         cancel = new Promise((resolve, reject) => {

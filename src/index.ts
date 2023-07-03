@@ -61,6 +61,10 @@ export class AbortError extends Error {
   }
 }
 
+export interface AbortOptions {
+  signal?: AbortSignal
+}
+
 interface BasePushable<T> {
   /**
    * End the iterable after all values in the buffer (if any) have been yielded. If an
@@ -78,8 +82,11 @@ interface BasePushable<T> {
   /**
    * Returns a promise that resolves when the underlying queue becomes empty (e.g.
    * this.readableLength === 0).
+   *
+   * If an AbortSignal is passed as an option and that signal aborts, it only
+   * causes the returned promise to reject - it does not end the pushable.
    */
-  onEmpty: (signal?: AbortSignal) => Promise<void>
+  onEmpty: (options?: AbortOptions) => Promise<void>
 
   /**
    * This property contains the number of bytes (or objects) in the queue ready to be read.
@@ -314,7 +321,8 @@ function _pushable<PushType, ValueType, ReturnType> (getNext: getNext<PushType, 
     get readableLength (): number {
       return buffer.size
     },
-    onEmpty: async (signal?: AbortSignal) => {
+    onEmpty: async (options?: AbortOptions) => {
+      const signal = options?.signal
       signal?.throwIfAborted()
 
       if (buffer.isEmpty()) {
@@ -330,19 +338,20 @@ function _pushable<PushType, ValueType, ReturnType> (getNext: getNext<PushType, 
             reject(new AbortError())
           }
 
-          signal?.addEventListener('abort', listener)
+          signal.addEventListener('abort', listener)
         })
       }
 
-      await Promise.race([
-        drain.promise,
-        cancel
-      ])
-        .finally(() => {
-          if (listener != null && signal != null) {
-            signal.removeEventListener('abort', listener)
-          }
-        })
+      try {
+        await Promise.race([
+          drain.promise,
+          cancel
+        ])
+      } finally {
+        if (listener != null && signal != null) {
+          signal.removeEventListener('abort', listener)
+        }
+      }
     }
   }
 

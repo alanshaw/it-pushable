@@ -212,19 +212,28 @@ function _pushable<PushType, ValueType, ReturnType> (getNext: getNext<PushType, 
 
   const waitNext = async (): Promise<NextResult<ValueType>> => {
     try {
-      let value: NextResult<ValueType> | undefined
-
       if (!buffer.isEmpty()) {
-        value = getNext(buffer)
-      }
-
-      if (value != null) {
-        return value
+        return getNext(buffer)
       }
 
       if (ended) {
         return { done: true }
       }
+
+      return await new Promise<NextResult<ValueType>>((resolve, reject) => {
+        onNext = (next: Next<PushType>) => {
+          onNext = null
+          buffer.push(next)
+
+          try {
+            resolve(getNext(buffer))
+          } catch (err) {
+            reject(err)
+          }
+
+          return pushable
+        }
+      })
     } finally {
       if (buffer.isEmpty()) {
         // settle promise in the microtask queue to give consumers a chance to
@@ -235,30 +244,6 @@ function _pushable<PushType, ValueType, ReturnType> (getNext: getNext<PushType, 
         })
       }
     }
-
-    return new Promise((resolve, reject) => {
-      onNext = (next: Next<PushType>) => {
-        onNext = null
-        buffer.push(next)
-
-        try {
-          resolve(getNext(buffer))
-        } catch (err) {
-          reject(err)
-        } finally {
-          if (buffer.isEmpty()) {
-            // settle promise in the microtask queue to give consumers a chance to
-            // await after calling .push
-            queueMicrotask(() => {
-              drain.resolve()
-              drain = deferred()
-            })
-          }
-        }
-
-        return pushable
-      }
-    })
   }
 
   const bufferNext = (next: Next<PushType>): ReturnType => {

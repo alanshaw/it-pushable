@@ -1,3 +1,10 @@
+## [3.2.1](https://github.com/alanshaw/it-pushable/compare/v3.2.0...v3.2.1) (2023-07-04)
+
+
+### Bug Fixes
+
+* await returned promise in waitNext ([#59](https://github.com/alanshaw/it-pushable/issues/59)) ([d19e8ca](https://github.com/alanshaw/it-pushable/commit/d19e8caf02a98989bd4c42f60ccc8d616bdbe12b))
+
 ## [3.2.0](https://github.com/alanshaw/it-pushable/compare/v3.1.4...v3.2.0) (2023-07-03)
 
 

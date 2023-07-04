@@ -1,6 +1,6 @@
 {
   "name": "it-pushable",
-  "version": "3.2.0",
+  "version": "3.2.1",
   "description": "An iterable that you can push values into",
   "author": "Alan Shaw",
   "license": "Apache-2.0 OR MIT",

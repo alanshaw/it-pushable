@@ -1,3 +1,16 @@
+## [3.2.2](https://github.com/alanshaw/it-pushable/compare/v3.2.1...v3.2.2) (2023-11-11)
+
+
+### Trivial Changes
+
+* add or force update .github/workflows/js-test-and-release.yml ([#66](https://github.com/alanshaw/it-pushable/issues/66)) ([9dc3452](https://github.com/alanshaw/it-pushable/commit/9dc3452fb1d6dc7a978dec2b429204996e28eb3a))
+* delete templates [skip ci] ([#65](https://github.com/alanshaw/it-pushable/issues/65)) ([623e049](https://github.com/alanshaw/it-pushable/commit/623e0496897df1db83c5677c3540b5b708251372))
+
+
+### Dependencies
+
+* **dev:** bump aegir from 39.0.13 to 41.0.5 ([#74](https://github.com/alanshaw/it-pushable/issues/74)) ([ca99910](https://github.com/alanshaw/it-pushable/commit/ca9991015a1852c2aedc16af149237ff5c083742))
+
 ## [3.2.1](https://github.com/alanshaw/it-pushable/compare/v3.2.0...v3.2.1) (2023-07-04)
 
 

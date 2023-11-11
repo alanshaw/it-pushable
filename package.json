@@ -18,10 +18,6 @@
     "push",
     "pushable"
   ],
-  "engines": {
-    "node": ">=16.0.0",
-    "npm": ">=7.0.0"
-  },
   "type": "module",
   "types": "./dist/src/index.d.ts",
   "files": [
@@ -39,6 +35,7 @@
   "eslintConfig": {
     "extends": "ipfs",
     "parserOptions": {
+      "project": true,
       "sourceType": "module"
     }
   },
@@ -142,14 +139,14 @@
     "release": "aegir release",
     "docs": "aegir docs"
   },
+  "dependencies": {
+    "p-defer": "^4.0.0"
+  },
   "devDependencies": {
     "@types/fast-fifo": "^1.0.0",
     "aegir": "^41.0.5",
     "it-all": "^3.0.1",
     "it-pipe": "^3.0.1",
     "uint8arraylist": "^2.0.0"
-  },
-  "dependencies": {
-    "p-defer": "^4.0.0"
   }
 }

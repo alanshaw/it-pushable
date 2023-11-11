@@ -71,13 +71,13 @@ interface BasePushable<T> {
    * error is passed the buffer is cleared immediately and the next iteration will
    * throw the passed error
    */
-  end: (err?: Error) => this
+  end(err?: Error): this
 
   /**
    * Push a value into the iterable. Values are yielded from the iterable in the order
    * they are pushed. Values not yet consumed from the iterable are buffered.
    */
-  push: (value: T) => this
+  push(value: T): this
 
   /**
    * Returns a promise that resolves when the underlying queue becomes empty (e.g.
@@ -86,7 +86,7 @@ interface BasePushable<T> {
    * If an AbortSignal is passed as an option and that signal aborts, it only
    * causes the returned promise to reject - it does not end the pushable.
    */
-  onEmpty: (options?: AbortOptions) => Promise<void>
+  onEmpty(options?: AbortOptions): Promise<void>
 
   /**
    * This property contains the number of bytes (or objects) in the queue ready to be read.
@@ -118,7 +118,7 @@ export interface Options {
    * buffered values). In the case when the iterator is ended with an error it will be
    * passed the error as a parameter.
    */
-  onEnd?: (err?: Error) => void
+  onEnd?(err?: Error): void
 }
 
 export interface DoneResult { done: true }

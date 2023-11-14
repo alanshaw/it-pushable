@@ -1,13 +1,7 @@
 // ported from https://www.npmjs.com/package/fast-fifo
 
-export interface Next<T> {
-  done?: boolean
-  error?: Error
-  value?: T
-}
-
 class FixedFIFO<T> {
-  public buffer: Array<Next<T> | undefined>
+  public buffer: Array<T | undefined>
   private readonly mask: number
   private top: number
   private btm: number
@@ -25,7 +19,13 @@ class FixedFIFO<T> {
     this.next = null
   }
 
-  push (data: Next<T>): boolean {
+  clear (): void {
+    this.top = this.btm = 0
+    this.next = null
+    this.buffer.fill(undefined)
+  }
+
+  push (data: T): boolean {
     if (this.buffer[this.top] !== undefined) {
       return false
     }
@@ -36,7 +36,7 @@ class FixedFIFO<T> {
     return true
   }
 
-  shift (): Next<T> | undefined {
+  shift (): T | undefined {
     const last = this.buffer[this.btm]
 
     if (last === undefined) {
@@ -45,7 +45,12 @@ class FixedFIFO<T> {
 
     this.buffer[this.btm] = undefined
     this.btm = (this.btm + 1) & this.mask
+
     return last
+  }
+
+  peek (): T | undefined {
+    return this.buffer[this.btm]
   }
 
   isEmpty (): boolean {
@@ -53,11 +58,21 @@ class FixedFIFO<T> {
   }
 }
 
-export interface FIFOOptions {
+export interface FIFOOptions<T> {
   /**
    * When the queue reaches this size, it will be split into head/tail parts
    */
   splitLimit?: number
+
+  calculateSize?(value?: T): number
+}
+
+function defaultCalculateSize (obj: any): number {
+  if (obj?.byteLength != null) {
+    return obj.byteLength
+  }
+
+  return 1
 }
 
 export class FIFO<T> {
@@ -65,26 +80,24 @@ export class FIFO<T> {
   private readonly hwm: number
   private head: FixedFIFO<T>
   private tail: FixedFIFO<T>
+  private readonly calculateSize: (value?: T) => number
 
-  constructor (options: FIFOOptions = {}) {
+  constructor (options: FIFOOptions<T> = {}) {
     this.hwm = options.splitLimit ?? 16
     this.head = new FixedFIFO<T>(this.hwm)
     this.tail = this.head
     this.size = 0
+    this.calculateSize = options.calculateSize ?? defaultCalculateSize
   }
 
-  calculateSize (obj: any): number {
-    if (obj?.byteLength != null) {
-      return obj.byteLength
-    }
-
-    return 1
+  clear (): void {
+    this.head = this.tail
+    this.head.clear()
+    this.size = 0
   }
 
-  push (val: Next<T>): void {
-    if (val?.value != null) {
-      this.size += this.calculateSize(val.value)
-    }
+  push (val: T): void {
+    this.size += this.calculateSize(val)
 
     if (!this.head.push(val)) {
       const prev = this.head
@@ -93,7 +106,7 @@ export class FIFO<T> {
     }
   }
 
-  shift (): Next<T> | undefined {
+  shift (): T | undefined {
     let val = this.tail.shift()
 
     if (val === undefined && (this.tail.next != null)) {
@@ -103,8 +116,18 @@ export class FIFO<T> {
       val = this.tail.shift()
     }
 
-    if (val?.value != null) {
-      this.size -= this.calculateSize(val.value)
+    if (this.size > 0) {
+      this.size -= this.calculateSize(val)
+    }
+
+    return val
+  }
+
+  peek (): T | undefined {
+    const val = this.tail.peek()
+
+    if (val === undefined && this.tail.next != null) {
+      return this.tail.next.peek()
     }
 
     return val

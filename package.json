@@ -140,7 +140,8 @@
     "docs": "aegir docs"
   },
   "dependencies": {
-    "p-defer": "^4.0.0"
+    "p-defer": "^4.0.0",
+    "race-signal": "^1.0.1"
   },
   "devDependencies": {
     "@types/fast-fifo": "^1.0.0",

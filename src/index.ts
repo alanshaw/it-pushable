@@ -45,347 +45,339 @@
  * // Output:
  * // [ [1, 2, 3] ]
  * ```
+ *
+ * ### Backpressure
+ * This module supports backpressure by returning a promise to any `push` or `end` call.
+ * These promises will resolve when the `push`ed value has been consumed (in the case of `.push`) or when the consumer has iterated over all values in the pushable (in the case of `.end`).
+ *
+ * If you do not wish to wait and instead buffer as much data as possible, do not await the result of `.push`
+ *
+ * @example
+ *
+ * ```js
+ * import { pushable } from 'it-pushable'
+ *
+ * const source = pushable()
+ *
+ * // wait for the value to be consumed
+ * await source.push(5)
+ *
+ * // do not wait for the value to be consumed
+ * void source.push(5)
+ *
+ * // only wait 10ms for the value to be consumed
+ * await source.push(5, {
+ *   signal: AbortSignal.timeout(10)
+ * })
+```
  */
 
-import deferred from 'p-defer'
-import { FIFO, type Next } from './fifo.js'
-
-export class AbortError extends Error {
-  type: string
-  code: string
-
-  constructor (message?: string, code?: string) {
-    super(message ?? 'The operation was aborted')
-    this.type = 'aborted'
-    this.code = code ?? 'ABORT_ERR'
-  }
-}
+import defer, { type DeferredPromise } from 'p-defer'
+import { raceSignal, type RaceSignalOptions } from 'race-signal'
+import { PFIFO } from './p-fifo.js'
 
 export interface AbortOptions {
   signal?: AbortSignal
 }
 
-interface BasePushable<T> {
+export interface PushableOptions {
   /**
-   * End the iterable after all values in the buffer (if any) have been yielded. If an
-   * error is passed the buffer is cleared immediately and the next iteration will
-   * throw the passed error
-   */
-  end(err?: Error): this
-
-  /**
-   * Push a value into the iterable. Values are yielded from the iterable in the order
-   * they are pushed. Values not yet consumed from the iterable are buffered.
-   */
-  push(value: T): this
-
-  /**
-   * Returns a promise that resolves when the underlying queue becomes empty (e.g.
-   * this.readableLength === 0).
-   *
-   * If an AbortSignal is passed as an option and that signal aborts, it only
-   * causes the returned promise to reject - it does not end the pushable.
-   */
-  onEmpty(options?: AbortOptions): Promise<void>
-
-  /**
-   * This property contains the number of bytes (or objects) in the queue ready to be read.
-   *
-   * If `objectMode` is true, this is the number of objects in the queue, if false it's the
-   * total number of bytes in the queue.
-   */
-  readableLength: number
-}
-
-/**
- * An iterable that you can push values into.
- */
-export interface Pushable<T, R = void, N = unknown> extends AsyncGenerator<T, R, N>, BasePushable<T> {}
-
-/**
- * Similar to `pushable`, except it yields multiple buffered chunks at a time. All values yielded from the iterable will be arrays.
- */
-export interface PushableV<T, R = void, N = unknown> extends AsyncGenerator<T[], R, N>, BasePushable<T> {}
-
-export interface Options {
-  /**
-   * A boolean value that means non-`Uint8Array`s will be passed to `.push`, default: `false`
-   */
-  objectMode?: boolean
-
-  /**
-   * A function called after *all* values have been yielded from the iterator (including
-   * buffered values). In the case when the iterator is ended with an error it will be
-   * passed the error as a parameter.
+   * A function called after *all* values have been yielded from the iterator
+   * (including buffered values). In the case when the iterator is ended with an
+   * error it will be passed the error as a parameter.
    */
   onEnd?(err?: Error): void
 }
 
-export interface DoneResult { done: true }
-export interface ValueResult<T> { done: false, value: T }
-export type NextResult<T> = ValueResult<T> | DoneResult
+export interface Pushable<T> extends AsyncGenerator<T, void, unknown> {
+  /**
+   * End the iterable after all values in the buffer (if any) have been yielded.
+   * If an error is passed the buffer is cleared immediately and the next
+   * iteration will throw the passed error
+   *
+   * If `.next` has not been called on this iterable, `.end` will return
+   * immediately. Otherwise it will wait for the final value to be consumed
+   * before resolving, unless the passed signal emits an `abort` event before
+   * then.
+   */
+  end(err?: Error, options?: AbortOptions & RaceSignalOptions): Promise<void>
 
-interface getNext<T, V = T> { (buffer: FIFO<T>): NextResult<V> }
+  /**
+   * Push a value into the iterable. Values are yielded from the iterable in the
+   * order they are pushed. Values not yet consumed from the iterable are
+   * buffered.
+   *
+   * When the returned promise resolves, the pushed value will have been
+   * consumed.
+   */
+  push(value: T, options?: AbortOptions & RaceSignalOptions): Promise<void>
 
-export interface ObjectPushableOptions extends Options {
-  objectMode: true
+  /**
+   * This property contains the number of bytes (or objects) in the queue ready
+   * to be read.
+   *
+   * If objects pushed into this queue have a `.byteLength` property, this is
+   * ths total number of bytes in the queue, otherwise it is the number of
+   * objects in the queue
+   */
+  readableLength: number
 }
 
-export interface BytePushableOptions extends Options {
-  objectMode?: false
+export interface PushableV<T> extends AsyncGenerator<T[], void, unknown> {
+  /**
+   * End the iterable after all values in the buffer (if any) have been yielded.
+   * If an error is passed the buffer is cleared immediately and the next
+   * iteration will throw the passed error
+   *
+   * If `.next` has not been called on this iterable, `.end` will return
+   * immediately. Otherwise it will wait for the final value to be consumed
+   * before resolving, unless the passed signal emits an `abort` event before
+   * then.
+   */
+  end(err?: Error, options?: AbortOptions & RaceSignalOptions): Promise<void>
+
+  /**
+   * Push a value into the iterable. Values are yielded from the iterable in the
+   * order they are pushed. Values not yet consumed from the iterable are
+   * buffered.
+   *
+   * When the returned promise resolves, the pushed value will have been
+   * consumed.
+   */
+  push(value: T, options?: AbortOptions & RaceSignalOptions): Promise<void>
+
+  /**
+   * Push a list of values into the iterable in-order. Values are yielded from
+   * the iterable in the order they are pushed. Values not yet consumed from the
+   * iterable are buffered.
+   *
+   * When the returned promise resolves, all pushed values will have been
+   * consumed.
+   */
+  pushV (values: T[], options?: AbortOptions & RaceSignalOptions): Promise<void>
+
+  /**
+   * This property contains the number of bytes (or objects) in the queue ready
+   * to be read.
+   *
+   * If objects pushed into this queue have a `.byteLength` property, this is
+   * ths total number of bytes in the queue, otherwise it is the number of
+   * objects in the queue
+   */
+  readableLength: number
 }
 
-/**
- * Create a new async iterable. The values yielded from calls to `.next()`
- * or when used in a `for await of`loop are "pushed" into the iterable.
- * Returns an async iterable object with additional methods.
- */
-export function pushable<T extends { byteLength: number } = Uint8Array> (options?: BytePushableOptions): Pushable<T>
-export function pushable<T> (options: ObjectPushableOptions): Pushable<T>
-export function pushable<T> (options: Options = {}): Pushable<T> {
-  const getNext = (buffer: FIFO<T>): NextResult<T> => {
-    const next: Next<T> | undefined = buffer.shift()
+abstract class AbstractPushable<T> {
+  protected readonly errorPromise: DeferredPromise<IteratorReturnResult<void>>
+  protected readonly returnPromise: DeferredPromise<IteratorReturnResult<undefined>>
+  protected fifo: PFIFO<IteratorResult<T, void>>
+  protected onEnd?: (err?: Error) => void
+  protected piped: boolean
+  protected ended: boolean
 
-    if (next == null) {
-      return { done: true }
-    }
-
-    if (next.error != null) {
-      throw next.error
-    }
-
-    return {
-      done: next.done === true,
-      // @ts-expect-error if done is false, value will be present
-      value: next.value
-    }
+  constructor (options?: PushableOptions) {
+    this.errorPromise = defer()
+    this.returnPromise = defer()
+    this.fifo = new PFIFO()
+    this.onEnd = options?.onEnd
+    this.piped = false
+    this.ended = false
   }
 
-  return _pushable<T, T, Pushable<T>>(getNext, options)
-}
-
-export function pushableV<T extends { byteLength: number } = Uint8Array> (options?: BytePushableOptions): PushableV<T>
-export function pushableV<T> (options: ObjectPushableOptions): PushableV<T>
-export function pushableV<T> (options: Options = {}): PushableV<T> {
-  const getNext = (buffer: FIFO<T>): NextResult<T[]> => {
-    let next: Next<T> | undefined
-    const values: T[] = []
-
-    while (!buffer.isEmpty()) {
-      next = buffer.shift()
-
-      if (next == null) {
-        break
-      }
-
-      if (next.error != null) {
-        throw next.error
-      }
-
-      if (next.done === false) {
-        // @ts-expect-error if done is false value should be pushed
-        values.push(next.value)
-      }
-    }
-
-    if (next == null) {
-      return { done: true }
-    }
-
-    return {
-      done: next.done === true,
-      value: values
-    }
+  [Symbol.asyncIterator] (): this {
+    return this
   }
 
-  return _pushable<T, T[], PushableV<T>>(getNext, options)
-}
+  async next (): Promise<IteratorResult<T, void>> {
+    this.piped = true
 
-function _pushable<PushType, ValueType, ReturnType> (getNext: getNext<PushType, ValueType>, options?: Options): ReturnType {
-  options = options ?? {}
-  let onEnd = options.onEnd
-  let buffer = new FIFO<PushType>()
-  let pushable: any
-  let onNext: ((next: Next<PushType>) => ReturnType) | null
-  let ended: boolean
-  let drain = deferred()
-
-  const waitNext = async (): Promise<NextResult<ValueType>> => {
     try {
-      if (!buffer.isEmpty()) {
-        return getNext(buffer)
-      }
+      const result = await Promise.race([
+        this.errorPromise.promise,
+        this.returnPromise.promise,
+        (async () => {
+          if (this.ended && this.fifo.isEmpty()) {
+            const result: IteratorReturnResult<void> = {
+              done: true,
+              value: undefined
+            }
 
-      if (ended) {
-        return { done: true }
-      }
-
-      return await new Promise<NextResult<ValueType>>((resolve, reject) => {
-        onNext = (next: Next<PushType>) => {
-          onNext = null
-          buffer.push(next)
-
-          try {
-            resolve(getNext(buffer))
-          } catch (err) {
-            reject(err)
+            return result
           }
 
-          return pushable
+          // if this.fifo is empty, this will wait for either a value to be
+          // pushed, or for .throw, .return or .end to be called
+          return this.getValues()
+        })()
+      ])
+
+      if (result.done === true) {
+        this.onEnd?.()
+        this.onEnd = undefined
+      }
+
+      return result
+    } catch (err: any) {
+      this.onEnd?.(err)
+      this.onEnd = undefined
+
+      throw err
+    }
+  }
+
+  async return (): Promise<IteratorReturnResult<void>> {
+    this.ended = true
+    this.returnPromise.resolve({ done: true, value: undefined })
+    this.fifo = new PFIFO()
+
+    this.onEnd?.()
+    this.onEnd = undefined
+
+    return {
+      done: true,
+      value: undefined
+    }
+  }
+
+  async throw (err: Error): Promise<IteratorReturnResult<undefined>> {
+    this.ended = true
+    this.errorPromise.reject(err)
+    this.fifo = new PFIFO()
+
+    this.onEnd?.(err)
+    this.onEnd = undefined
+
+    return {
+      done: true,
+      value: undefined
+    }
+  }
+
+  async end (err?: Error, options?: AbortOptions & RaceSignalOptions): Promise<void> {
+    this.ended = true
+
+    if (err != null) {
+      await this.throw(err)
+      return
+    }
+
+    await new Promise<void>((resolve, reject) => {
+      // settle promise in the microtask queue to give consumers a chance to
+      // await after calling .push
+      queueMicrotask(() => {
+        if (!this.piped && this.fifo.isEmpty()) {
+          // never pushed or piped
+          this.onEnd?.(err)
+          this.onEnd = undefined
+
+          resolve()
+          return
         }
+
+        raceSignal(
+          this.fifo.push({ done: true, value: undefined }),
+          options?.signal,
+          options
+        )
+          .then(() => { resolve() }, (err) => { reject(err) })
       })
-    } finally {
-      if (buffer.isEmpty()) {
-        // settle promise in the microtask queue to give consumers a chance to
-        // await after calling .push
-        queueMicrotask(() => {
-          drain.resolve()
-          drain = deferred()
-        })
-      }
-    }
+    })
   }
 
-  const bufferNext = (next: Next<PushType>): ReturnType => {
-    if (onNext != null) {
-      return onNext(next)
-    }
-
-    buffer.push(next)
-    return pushable
+  get readableLength (): number {
+    return this.fifo.size
   }
 
-  const bufferError = (err: Error): ReturnType => {
-    buffer = new FIFO()
+  protected abstract getValues (): Promise<IteratorResult<T, void>>
+}
 
-    if (onNext != null) {
-      return onNext({ error: err })
+class ItPushable<T> extends AbstractPushable<T> implements Pushable<T> {
+  protected async getValues (): Promise<IteratorResult<T, void>> {
+    return this.fifo.shift()
+  }
+
+  async push (value: T, options?: AbortOptions & RaceSignalOptions): Promise<void> {
+    if (this.ended) {
+      throw new Error('pushable has already ended')
     }
 
-    buffer.push({ error: err })
-    return pushable
+    await raceSignal(
+      this.fifo.push({ done: false, value }),
+      options?.signal,
+      options
+    )
   }
+}
 
-  const push = (value: PushType): ReturnType => {
-    if (ended) {
-      return pushable
+class ItPushableV<T> extends AbstractPushable<T[]> implements PushableV<T> {
+  protected async getValues (): Promise<IteratorResult<T[], void>> {
+    const promises: Array<Promise<IteratorResult<T[]>>> = []
+
+    while (!this.fifo.isEmpty()) {
+      promises.push(this.fifo.shift())
     }
 
-    // @ts-expect-error `byteLength` is not declared on PushType
-    if (options?.objectMode !== true && value?.byteLength == null) {
-      throw new Error('objectMode was not true but tried to push non-Uint8Array value')
+    const output: IteratorResult<T[]> = {
+      done: false,
+      value: []
     }
 
-    return bufferNext({ done: false, value })
-  }
-  const end = (err?: Error): ReturnType => {
-    if (ended) return pushable
-    ended = true
+    for (const result of await Promise.all(promises)) {
+      if (result.done === true) {
+        if (output.value.length > 0) {
+          // we have some values, return them but empty the iterator
+          // so we return { done: true } on the subsequent calls to
+          // .next()
+          this.fifo = new PFIFO()
+          this.ended = true
+          break
+        }
 
-    return (err != null) ? bufferError(err) : bufferNext({ done: true })
-  }
-  const _return = (): DoneResult => {
-    buffer = new FIFO()
-    end()
-
-    return { done: true }
-  }
-  const _throw = (err: Error): DoneResult => {
-    end(err)
-
-    return { done: true }
-  }
-
-  pushable = {
-    [Symbol.asyncIterator] () { return this },
-    next: waitNext,
-    return: _return,
-    throw: _throw,
-    push,
-    end,
-    get readableLength (): number {
-      return buffer.size
-    },
-    onEmpty: async (options?: AbortOptions) => {
-      const signal = options?.signal
-      signal?.throwIfAborted()
-
-      if (buffer.isEmpty()) {
-        return
-      }
-
-      let cancel: Promise<void> | undefined
-      let listener: (() => void) | undefined
-
-      if (signal != null) {
-        cancel = new Promise((resolve, reject) => {
-          listener = () => {
-            reject(new AbortError())
-          }
-
-          signal.addEventListener('abort', listener)
-        })
-      }
-
-      try {
-        await Promise.race([
-          drain.promise,
-          cancel
-        ])
-      } finally {
-        if (listener != null && signal != null) {
-          signal?.removeEventListener('abort', listener)
+        // did not have any values, just return done result
+        return {
+          done: true,
+          value: undefined
         }
       }
+
+      if (result.value != null) {
+        output.value.push(...result.value)
+      }
     }
-  }
 
-  if (onEnd == null) {
-    return pushable
-  }
-
-  const _pushable = pushable
-
-  pushable = {
-    [Symbol.asyncIterator] () { return this },
-    next () {
-      return _pushable.next()
-    },
-    throw (err: Error) {
-      _pushable.throw(err)
-
-      if (onEnd != null) {
-        onEnd(err)
-        onEnd = undefined
+    if (output.value.length === 0) {
+      return {
+        done: true,
+        value: undefined
       }
-
-      return { done: true }
-    },
-    return () {
-      _pushable.return()
-
-      if (onEnd != null) {
-        onEnd()
-        onEnd = undefined
-      }
-
-      return { done: true }
-    },
-    push,
-    end (err: Error) {
-      _pushable.end(err)
-
-      if (onEnd != null) {
-        onEnd(err)
-        onEnd = undefined
-      }
-
-      return pushable
-    },
-    get readableLength () {
-      return _pushable.readableLength
     }
+
+    return output
   }
 
-  return pushable
+  async push (value: T, options?: AbortOptions & RaceSignalOptions): Promise<void> {
+    await this.pushV([value], options)
+  }
+
+  async pushV (values: T[], options?: AbortOptions & RaceSignalOptions): Promise<void> {
+    if (this.ended) {
+      throw new Error('pushable has already ended')
+    }
+
+    await raceSignal(
+      this.fifo.push({ done: false, value: values }),
+      options?.signal,
+      options
+    )
+  }
+}
+
+export function pushable<T> (options?: PushableOptions): Pushable<T>
+export function pushable<T> (options?: PushableOptions): Pushable<T> {
+  return new ItPushable<T>(options)
+}
+
+export function pushableV<T> (options?: PushableOptions): PushableV<T>
+export function pushableV<T> (options?: PushableOptions): PushableV<T> {
+  return new ItPushableV<T>(options)
 }

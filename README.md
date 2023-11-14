@@ -10,6 +10,7 @@
 - [Install](#install)
   - [Browser `<script>` tag](#browser-script-tag)
 - [Usage](#usage)
+  - [Backpressure](#backpressure)
 - [Related](#related)
 - [API Docs](#api-docs)
 - [License](#license)
@@ -71,6 +72,35 @@ console.info(await all(source))
 Output:
 [ [1, 2, 3] ]
 */
+```
+
+### Backpressure
+
+This module supports backpressure by returning a promise to any `push` or `end`
+call.
+
+These promises will resolve when the `push`ed value has been consumed (in the
+case of `.push`) or when the consumer has iterated over all values in the
+pushable (in the case of `.end`).
+
+If you do not wish to wait and instead buffer as much data as possible, do not
+await the result of `.push`
+
+```js
+import { pushable } from 'it-pushable'
+
+const source = pushable()
+
+// wait for the value to be consumed
+await source.push(5)
+
+// do not wait for the value to be consumed
+void source.push(5)
+
+// only wait 10ms for the value to be consumed
+await source.push(5, {
+  signal: AbortSignal.timeout(10)
+})
 ```
 
 ## Related

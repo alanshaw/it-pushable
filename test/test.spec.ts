@@ -1,9 +1,9 @@
 import { expect } from 'aegir/chai'
 import all from 'it-all'
 import { pipe } from 'it-pipe'
+import pDefer from 'p-defer'
 import { Uint8ArrayList } from 'uint8arraylist'
 import { pushable, pushableV } from '../src/index.js'
-import pDefer from 'p-defer'
 
 describe('it-pushable', () => {
   it('should push input slowly', async () => {

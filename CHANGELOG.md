@@ -1,3 +1,10 @@
+## [3.2.3](https://github.com/alanshaw/it-pushable/compare/v3.2.2...v3.2.3) (2023-11-16)
+
+
+### Bug Fixes
+
+* support onEmpty with onEnd ([#76](https://github.com/alanshaw/it-pushable/issues/76)) ([26b5d18](https://github.com/alanshaw/it-pushable/commit/26b5d18d788b16833d66c4063a1c9f07d5a57e53))
+
 ## [3.2.2](https://github.com/alanshaw/it-pushable/compare/v3.2.1...v3.2.2) (2023-11-11)
 
 

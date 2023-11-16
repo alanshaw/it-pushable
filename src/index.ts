@@ -384,6 +384,9 @@ function _pushable<PushType, ValueType, ReturnType> (getNext: getNext<PushType, 
     },
     get readableLength () {
       return _pushable.readableLength
+    },
+    onEmpty: (opts?: AbortOptions) => {
+      return _pushable.onEmpty(opts)
     }
   }
 

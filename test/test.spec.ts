@@ -3,6 +3,7 @@ import all from 'it-all'
 import { pipe } from 'it-pipe'
 import { Uint8ArrayList } from 'uint8arraylist'
 import { pushable, pushableV } from '../src/index.js'
+import pDefer from 'p-defer'
 
 describe('it-pushable', () => {
   it('should push input slowly', async () => {
@@ -138,6 +139,23 @@ describe('it-pushable', () => {
     }
     setTimeout(() => source.end(), input.length * 10)
     void pipe(source, async (source) => all(source))
+  })
+
+  it('should call onEnd after onEmpty', async () => {
+    const ended = pDefer()
+    const source = pushable<number>({
+      objectMode: true,
+      onEnd: () => {
+        ended.resolve()
+      }
+    })
+    source.push(1)
+    source.push(2)
+    source.push(3)
+    source.end()
+
+    await source.onEmpty()
+    await ended.promise
   })
 
   it('should call onEnd if passed in options object', (done) => {

@@ -48,7 +48,7 @@
  */
 
 import deferred from 'p-defer'
-import { FIFO, type Next } from './fifo.js'
+import { FIFO, type Next } from './fifo.ts'
 
 export class AbortError extends Error {
   type: string

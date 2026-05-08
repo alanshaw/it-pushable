@@ -3,7 +3,7 @@ import all from 'it-all'
 import { pipe } from 'it-pipe'
 import pDefer from 'p-defer'
 import { Uint8ArrayList } from 'uint8arraylist'
-import { pushable, pushableV } from '../src/index.js'
+import { pushable, pushableV } from '../src/index.ts'
 
 describe('it-pushable', () => {
   it('should push input slowly', async () => {
@@ -210,7 +210,7 @@ describe('it-pushable', () => {
       for await (const value of source) {
         output.push(value)
         i++
-        if (i === max) break
+        if (i === max) { break }
       }
     })()
   })

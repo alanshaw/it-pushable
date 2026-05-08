@@ -48,7 +48,8 @@
  */
 
 import deferred from 'p-defer'
-import { FIFO, type Next } from './fifo.js'
+import { FIFO } from './fifo.ts'
+import type { Next } from './fifo.ts'
 
 export class AbortError extends Error {
   type: string
@@ -279,7 +280,7 @@ function _pushable<PushType, ValueType, ReturnType> (getNext: getNext<PushType, 
     return bufferNext({ done: false, value })
   }
   const end = (err?: Error): ReturnType => {
-    if (ended) return pushable
+    if (ended) { return pushable }
     ended = true
 
     return (err != null) ? bufferError(err) : bufferNext({ done: true })

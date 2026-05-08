@@ -210,7 +210,7 @@ describe('it-pushable', () => {
       for await (const value of source) {
         output.push(value)
         i++
-        if (i === max) break
+        if (i === max) { break }
       }
     })()
   })
